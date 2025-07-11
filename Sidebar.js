@@ -1,13 +1,16 @@
-export default function Sidebar() {
+import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
+
+export default function Home() {
   return (
-    <div style={{ width: '250px', backgroundColor: '#222', color: 'white', padding: '1rem' }}>
-      <h2>Roza</h2>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        <li>Dashboard</li>
-        <li>Opportunities</li>
-        <li>Saved</li>
-        <li>Team</li>
-      </ul>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#111' }}>
+      <Sidebar />
+      <div style={{ flex: 1, color: 'white' }}>
+        <Header />
+        <div style={{ padding: '2rem' }}>
+          <h1>Welcome to Roza, your Contract Intelligence Dashboard</h1>
+        </div>
+      </div>
     </div>
   );
 }
