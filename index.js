@@ -1,4 +1,4 @@
-// Trigger clean rebuild
+// Trigger clean rebuild again
 
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
@@ -6,6 +6,7 @@ import Header from '../components/Header';
 export default function Home() {
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#111' }}>
+      <p style={{ color: 'lime' }}>Rendering started...</p> {/* Add this debug line */}
       <Sidebar />
       <div style={{ flex: 1, color: 'white' }}>
         <Header />
