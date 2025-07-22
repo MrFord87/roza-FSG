@@ -1,6 +1,6 @@
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import LoginForm from '../components/LonginForm';
+import LoginForm from '../components/LoginForm';
 
 export default function Home() {
   return (
