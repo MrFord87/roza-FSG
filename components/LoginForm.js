@@ -6,7 +6,7 @@ export default function LoginForm() {
 
   const handleLogin = () => {
     if (email === 'a.ford@fsgsolutions.net' && password === 'FSG123$%^') {
-      alert('Login successful');
+      router.push('/dashboard');
     } else {
       alert('Invalid credentials');
     }
