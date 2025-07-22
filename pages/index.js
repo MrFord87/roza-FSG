@@ -10,7 +10,7 @@ export default function Home() {
         <Header />
         <div style={{ padding: '2rem' }}>
           <h1>Welcome to Roza, your Contract Intelligence Dashboard</h1>
-  <LoginForm/>
+          <LoginForm/>
         </div>
       </div>
     </div>
