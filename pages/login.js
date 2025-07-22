@@ -1,75 +1,41 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
-export default function Login() {
+export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Placeholder for authentication logic
-    alert(`Logging in with:\nEmail: ${email}\nPassword: ${password}`);
+    console.log('Login Attempt:', { email, password });
+    // Here you’d typically call an API or auth function
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.formContainer}>
-        <h2>Login to Roza</h2>
-        <form onSubmit={handleSubmit} style={styles.form}>
+    <div style={{ backgroundColor: '#222', padding: '2rem', borderRadius: '8px' }}>
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit}>
+        <div>
           <input
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-            required
+            style={{ width: '100%', marginBottom: '1rem' }}
           />
+        </div>
+        <div>
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
-            required
+            style={{ width: '100%', marginBottom: '1rem' }}
           />
-          <button type="submit" style={styles.button}>Login</button>
-        </form>
-      </div>
+        </div>
+        <button type="submit" style={{ width: '100%', padding: '0.5rem', backgroundColor: '#444', color: 'white', border: 'none' }}>
+          Login
+        </button>
+      </form>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    display: 'flex',
-    height: '100vh',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#111',
-    color: 'white',
-  },
-  formContainer: {
-    backgroundColor: '#222',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.5)',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  input: {
-    margin: '0.5rem 0',
-    padding: '0.75rem',
-    border: 'none',
-    borderRadius: '4px',
-  },
-  button: {
-    marginTop: '1rem',
-    padding: '0.75rem',
-    backgroundColor: '#4CAF50',
-    border: 'none',
-    borderRadius: '4px',
-    color: 'white',
-    cursor: 'pointer',
-  },
-};
