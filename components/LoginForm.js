@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter();  // <-- You were missing this
 
   const handleLogin = () => {
     if (email === 'a.ford@fsgsolutions.net' && password === 'FSG123$%^') {
