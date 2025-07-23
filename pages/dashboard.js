@@ -5,7 +5,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [quote, setQuote] = useState('');
 
-  useEffect(() => {//
+  useEffect(( => {}))
     const phrases = [
       'Win Today',
       'One Contract at a Time',
