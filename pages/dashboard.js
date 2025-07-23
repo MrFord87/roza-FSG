@@ -1,16 +1,12 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Calendar from '@/components/Calendar'
-import Tasks from '@/components/Tasks'
-import Contacts from '@/components/Contacts'
-import Proposals from '@/components/Proposals'
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('overview')
-  const [dailyPhrase, setDailyPhrase] = useState('')
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // List of 35 motivational phrases
   const phrases = [
     'Win Today',
     'One Contract at a Time',
@@ -46,60 +42,42 @@ export default function Dashboard() {
     'Handle Business, Humbly',
     'We’re Not Done Yet',
     'Purpose Over Pressure',
-    'Fighter Jets Only',
-  ]
+    'Fighter Jets Only'
+  ];
 
-  // Set daily phrase based on day of year
-  useEffect(() => {
-    const today = new Date()
-    const start = new Date(today.getFullYear(), 0, 0)
-    const diff = today - start
-    const oneDay = 1000 * 60 * 60 * 24
-    const dayOfYear = Math.floor(diff / oneDay)
-    const index = dayOfYear % phrases.length
-    setDailyPhrase(phrases[index])
-  }, [])
+  const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 p-6 space-y-4">
-        <h2 className="text-2xl font-bold mb-4">Roza Dashboard</h2>
-        {['overview', 'calendar', 'tasks', 'contacts', 'proposals'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`w-full text-left px-4 py-2 rounded ${
-              activeTab === tab ? 'bg-blue-600' : 'hover:bg-gray-700'
-            }`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-6 space-y-6">
-        <h1 className="text-3xl font-bold capitalize">{activeTab}</h1>
-
-        {activeTab === 'overview' && (
-          <div className="space-y-4">
-            <div className="bg-gray-700 p-4 rounded text-xl font-semibold text-center">
-              {dailyPhrase}
-            </div>
+    <div className="p-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview">
+          <div className="space-y-6">
+            <div className="text-2xl font-bold text-center text-lime-400">{randomPhrase}</div>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-gray-700 p-4 rounded">Total Clients</div>
               <div className="bg-gray-700 p-4 rounded">Open Tasks</div>
               <div className="bg-gray-700 p-4 rounded">Upcoming Deadlines</div>
             </div>
           </div>
-        )}
-
-        {activeTab === 'calendar' && <Calendar />}
-        {activeTab === 'tasks' && <Tasks />}
-        {activeTab === 'contacts' && <Contacts />}
-        {activeTab === 'proposals' && <Proposals />}
-      </main>
+        </TabsContent>
+        <TabsContent value="tasks">
+          <div className="space-y-4">
+            <div className="bg-gray-700 p-4 rounded">Task 1</div>
+            <div className="bg-gray-700 p-4 rounded">Task 2</div>
+            <div className="bg-gray-700 p-4 rounded">Task 3</div>
+          </div>
+        </TabsContent>
+        <TabsContent value="settings">
+          <div className="space-y-4">
+            <div className="bg-gray-700 p-4 rounded">Settings Panel</div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
-  )
+  );
 }
