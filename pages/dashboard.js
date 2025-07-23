@@ -1,4 +1,3 @@
-import { fetchSAMData } from '../utils/api';
 import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
@@ -14,9 +13,9 @@ export default function Dashboard() {
       'It Takes ALL of Us',
       'Billion Dollar Company',
       'Keep Digging',
-      'Let’s Eat',
+      'Let\'s Eat',
       'Own the Morning',
-      'Nobody’s Coming — It’s On Us',
+      'Nobody\'s Coming — It\'s On Us',
       'Let the Work Speak',
       'Build What They Said You Couldn’t',
       'Rain or Shine, We Move',
