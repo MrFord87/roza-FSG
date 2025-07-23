@@ -10,41 +10,41 @@ export default function Dashboard() {
       'Win Today',
       'One Contract at a Time',
       'FSG Solutions is the Solution',
-      'Step by Step Fellas',
+      'Step by Step, Fellas',
       'It Takes ALL of Us',
       'Billion Dollar Company',
+      'Keep Digging',
       'Let’s Eat',
-      'Trust the Process',
-      'No Shortcuts, Just Work',
-      'Focus Builds Fortunes',
-      'We Build. We Scale. We Serve.',
-      'Rise. Grind. Repeat.',
-      'Built for This',
-      'Keep Going',
-      'Don’t Count the Days, Make Them Count',
-      'Dream. Plan. Execute.',
-      'Everything Counts',
-      'Make It Happen',
-      'Discipline Over Everything',
-      'Don’t Waste a Rep',
-      'Sweat Equity Pays Dividends',
-      'Built by Grit',
-      'Level Up Today',
-      'Mind Right, Moves Tight',
-      'Push Forward Always',
-      'Earn Your Stripe',
-      'Teamwork = Dreamwork',
-      'No Excuses, Just Results',
-      'All In Everyday',
+      'Own the Morning',
+      'Nobody’s Coming — It’s On Us',
+      'Let the Work Speak',
+      'Build What They Said You Couldn’t',
+      'Rain or Shine, We Move',
+      'Dream Bigger, Execute Sharper',
+      'All Gas, No Brakes',
+      'Be the Standard',
+      'Earned, Not Given',
+      'Clock In With Purpose',
+      'One More Rep',
+      'Built for the Hard Days',
       'Brick by Brick',
-      'Execute Relentlessly',
-      'The Goal is Growth',
-      'Strive for Greatness',
-      'Start Strong, Finish Stronger',
-      'Let’s Go Get It'
+      'Clean Bins, Clean Wins',
+      'Talk Less, Clean More',
+      'Focus. Grind. Grow.',
+      'Built in the Trenches',
+      'Respect the Process',
+      'Leadership Looks Like This',
+      'Championship Habits Only',
+      'Team FSG. Full Throttle.',
+      'We Don’t Fold',
+      'Roza Built. Roza Backed.',
+      'Handle Business, Humbly',
+      'We’re Not Done Yet',
+      'Purpose Over Pressure',
+      'Fighter Jets Only'
     ];
-    const randomIndex = Math.floor(Math.random() * phrases.length);
-    setQuote(phrases[randomIndex]);
+    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+    setQuote(randomPhrase);
   }, []);
 
   return (
@@ -56,8 +56,8 @@ export default function Dashboard() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`block w-full text-left px-4 py-2 rounded hover:bg-gray-700 ${
-              activeTab === tab ? 'bg-gray-700 font-semibold' : ''
+            className={`text-left w-full p-2 rounded hover:bg-gray-700 ${
+              activeTab === tab ? 'bg-gray-700' : ''
             }`}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -66,10 +66,12 @@ export default function Dashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-10">
+      <main className="flex-1 p-8">
+        <h1 className="text-3xl font-semibold mb-6">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
+
         {activeTab === 'overview' && (
           <>
-            <h1 className="text-3xl font-bold mb-6">{quote}</h1>
+            <p className="mb-4 text-xl italic text-yellow-400">{quote}</p>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-gray-700 p-4 rounded">Total Clients</div>
               <div className="bg-gray-700 p-4 rounded">Open Tasks</div>
@@ -79,38 +81,28 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'calendar' && (
-          <div className="bg-gray-700 p-4 rounded">
-            {/* Google Calendar embed or logic to be added */}
-            Calendar integration coming soon...
-          </div>
+          <div className="bg-gray-700 p-8 rounded text-center">[ Calendar Component Placeholder ]</div>
         )}
 
         {activeTab === 'tasks' && (
-          <div className="bg-gray-700 p-4 rounded">
-            <h2 className="text-xl font-bold mb-4">Tasks</h2>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>Follow up with HOA board</li>
-              <li>Finalize pricing for mobile park proposal</li>
-              <li>Schedule bin cleaning demo</li>
-            </ul>
+          <div className="space-y-2">
+            <div className="bg-gray-700 p-4 rounded">Task 1</div>
+            <div className="bg-gray-700 p-4 rounded">Task 2</div>
+            <div className="bg-gray-700 p-4 rounded">Task 3</div>
           </div>
         )}
 
         {activeTab === 'contacts' && (
-          <div className="bg-gray-700 p-4 rounded">
-            <h2 className="text-xl font-bold mb-4">Contacts</h2>
-            <ul className="space-y-2">
-              <li>Crystal – Real Estate Agent</li>
-              <li>Jose – Mobile Home Park Manager</li>
-              <li>Ms. Thompson – HOA President</li>
-            </ul>
+          <div className="space-y-2">
+            <div className="bg-gray-700 p-4 rounded">John Doe - Builder</div>
+            <div className="bg-gray-700 p-4 rounded">Crystal - Realtor</div>
           </div>
         )}
 
         {activeTab === 'proposals' && (
-          <div className="bg-gray-700 p-4 rounded">
-            <h2 className="text-xl font-bold mb-4">Proposal Template</h2>
-            <p>Ready-to-fill proposal content and layout for new clients.</p>
+          <div className="bg-gray-700 p-6 rounded">
+            <h3 className="text-xl font-semibold mb-4">Proposal Template</h3>
+            <p className="text-gray-300">[Placeholder for contract data input]</p>
           </div>
         )}
       </main>
