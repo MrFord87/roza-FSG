@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { fetchSAMData } from '../utils/api';
+import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
