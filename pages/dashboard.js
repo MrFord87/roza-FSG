@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { fetchSAMData } from '../utils/api';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [quote, setQuote] = useState('');
+  const [samResults, setSamResults] = useState([]);
 
   useEffect(() => {
     const phrases = [
@@ -13,9 +15,9 @@ export default function Dashboard() {
       'It Takes ALL of Us',
       'Billion Dollar Company',
       'Keep Digging',
-      'Let\'s Eat',
+      'Let’s Eat',
       'Own the Morning',
-      'Nobody\'s Coming — It\'s On Us',
+      'Nobody’s Coming — It’s On Us',
       'Let the Work Speak',
       'Build What They Said You Couldn’t',
       'Rain or Shine, We Move',
@@ -46,6 +48,18 @@ export default function Dashboard() {
     setQuote(randomPhrase);
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'proposals') {
+      fetchSAMData('janitorial').then((data) => {
+        if (data && data.opportunitiesData && data.opportunitiesData.length) {
+          setSamResults(data.opportunitiesData);
+        } else {
+          setSamResults([]);
+        }
+      });
+    }
+  }, [activeTab]);
+
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
       {/* Sidebar */}
@@ -66,7 +80,9 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 p-8">
-        <h1 className="text-3xl font-semibold mb-6">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
+        <h1 className="text-3xl font-semibold mb-6">
+          {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+        </h1>
 
         {activeTab === 'overview' && (
           <>
@@ -99,9 +115,23 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'proposals' && (
-          <div className="bg-gray-700 p-6 rounded">
+          <div className="bg-gray-700 p-6 rounded space-y-4">
             <h3 className="text-xl font-semibold mb-4">Proposal Template</h3>
             <p className="text-gray-300">[Placeholder for contract data input]</p>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-2">Recent Opportunities:</h4>
+              {samResults.length > 0 ? (
+                samResults.map((item, index) => (
+                  <div key={index} className="bg-gray-800 p-4 rounded mb-2">
+                    <p className="font-bold">{item.title}</p>
+                    <p className="text-sm text-gray-400">{item.naics}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400">No data yet or still loading...</p>
+              )}
+            </div>
           </div>
         )}
       </main>
