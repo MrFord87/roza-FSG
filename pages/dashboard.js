@@ -115,9 +115,22 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'proposals' && (
-          <div className="bg-gray-700 p-6 rounded space-y-4">
-            <h3 className="text-xl font-semibold mb-4">Proposal Template</h3>
-            <p className="text-gray-300">[Placeholder for contract data input]</p>
+  <div className="bg-gray-700 p-6 rounded">
+    <h3 className="text-xl font-semibold mb-4">Proposal Template</h3>
+    <p className="text-gray-300">[Placeholder for contract data input]</p>
+
+    <h4 className="text-lg font-semibold mt-6">Recent Opportunities:</h4>
+    {opportunities.length > 0 ? (
+      <ul className="list-disc list-inside text-gray-300">
+        {opportunities.map((opp, index) => (
+          <li key={index}>{opp.title || 'Untitled Opportunity'}</li>
+        )}
+      </ul>
+    ) : (
+      <p className="text-gray-400">No data yet or still loading...</p>
+    )}
+  </div>
+)}
 
             <div>
               <h4 className="text-lg font-semibold mb-2">Recent Opportunities:</h4>
