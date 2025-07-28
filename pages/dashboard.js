@@ -5,6 +5,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [quote, setQuote] = useState('');
   const [samResults, setSamResults] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
     const phrases = [
@@ -50,13 +51,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (activeTab === 'proposals') {
-      fetchSAMData('janitorial').then((data) => {
-        if (data && data.opportunities && data.opportunities.searchResults) {
-          setSamResults(data.opportunities.searchResults);
-        } else {
-          setSamResults([]);
-        }
-      });
+      fetchSAMData('janitorial')
+        .then((data) => {
+          console.log('SAM.gov response:', data); // Debug log
+
+          if (data && data.opportunitiesData && data.opportunitiesData.length > 0) {
+            setSamResults(data.opportunitiesData);
+            setFetchError(null);
+          } else {
+            setSamResults([]);
+            setFetchError('No opportunities found or unexpected response structure.');
+          }
+        })
+        .catch((err) => {
+          console.error('Fetch error:', err);
+          setFetchError('Failed to fetch data.');
+        });
     }
   }, [activeTab]);
 
@@ -121,11 +131,13 @@ export default function Dashboard() {
 
             <div>
               <h4 className="text-lg font-semibold mb-2">Recent Opportunities:</h4>
-              {samResults.length > 0 ? (
+              {fetchError ? (
+                <p className="text-red-400">{fetchError}</p>
+              ) : samResults.length > 0 ? (
                 samResults.map((item, index) => (
                   <div key={index} className="bg-gray-800 p-4 rounded mb-2">
-                    <p className="font-bold">{item.title || 'Untitled Opportunity'}</p>
-                    <p className="text-sm text-gray-400">{item.naics || 'No NAICS listed'}</p>
+                    <p className="font-bold">{item.title}</p>
+                    <p className="text-sm text-gray-400">{item.naics}</p>
                   </div>
                 ))
               ) : (
