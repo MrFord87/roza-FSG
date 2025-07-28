@@ -55,13 +55,13 @@ export default function Dashboard() {
         .then((data) => {
           console.log('SAM.gov response:', data); // Debug log
 
-          if (data && data.opportunitiesData && data.opportunitiesData.length > 0) {
-            setSamResults(data.opportunitiesData);
-            setFetchError(null);
-          } else {
-            setSamResults([]);
-            setFetchError('No opportunities found or unexpected response structure.');
-          }
+          if (data && data.opportunities && data.opportunities.length > 0) {
+  setSamResults(data.opportunities);
+  setFetchError(null);
+} else {
+  setSamResults([]);
+  setFetchError('No opportunities found or unexpected response structure.');
+}
         })
         .catch((err) => {
           console.error('Fetch error:', err);
