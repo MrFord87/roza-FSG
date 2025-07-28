@@ -69,7 +69,10 @@ export default function Dashboard() {
         });
     }
   }, [activeTab]);
-
+{/* DEBUG ONLY */}
+<pre className="text-xs text-yellow-400 whitespace-pre-wrap">
+  {JSON.stringify(samResults, null, 2)}
+</pre>
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
       {/* Sidebar */}
