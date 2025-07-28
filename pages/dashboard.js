@@ -51,9 +51,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (activeTab === 'proposals') {
-      fetchSAMData('construction')
+      fetchSAMData('janitorial')
         .then((data) => {
-          console.log('SAM.gov response:', data); // Debug log
+          console.log('RAW RESPONSE:',data);
 
           if (data && data.opportunities && data.opportunities.length > 0) {
   setSamResults(data.opportunities);
