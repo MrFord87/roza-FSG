@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_KEY = 'YOUR_REAL_API_KEY_HERE'; // Replace with your actual API key
+const API_KEY = 'jOZCfNRzt6nwN7jb5oWRSC5qFw9nz67QV0Rclc3x'; // ← Replace with your actual key
 
 export async function fetchSAMData(keyword) {
   const url = `https://api.sam.gov/opportunities/v1/search?api_key=${API_KEY}&keyword=${encodeURIComponent(keyword)}&limit=10&sort=modifiedDate`;
