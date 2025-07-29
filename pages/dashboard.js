@@ -4,50 +4,45 @@ import { fetchSAMData } from '../utils/api';
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [quote, setQuote] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [samResults, setSamResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
-  const [rawData, setRawData] = useState({}); // For debug purposes
 
   useEffect(() => {
     const phrases = [
-      'Win Today', 'One Contract at a Time', 'FSG Solutions is the Solution', 'Step by Step, Fellas',
-      'It Takes ALL of Us', 'Billion Dollar Company', 'Keep Digging', 'Let’s Eat',
-      'Own the Morning', 'Nobody’s Coming — It’s On Us', 'Let the Work Speak',
-      'Build What They Said You Couldn’t', 'Rain or Shine, We Move', 'Dream Bigger, Execute Sharper',
-      'All Gas, No Brakes', 'Be the Standard', 'Earned, Not Given', 'Clock In With Purpose',
-      'One More Rep', 'Built for the Hard Days', 'Brick by Brick', 'Clean Bins, Clean Wins',
-      'Talk Less, Clean More', 'Focus. Grind. Grow.', 'Built in the Trenches', 'Respect the Process',
-      'Leadership Looks Like This', 'Championship Habits Only', 'Team FSG. Full Throttle.',
-      'We Don’t Fold', 'Roza Built. Roza Backed.', 'Handle Business, Humbly', 'We’re Not Done Yet',
-      'Purpose Over Pressure', 'Fighter Jets Only'
+      'Win Today', 'One Contract at a Time', 'Step by Step, Fellas', 'Let the Work Speak',
+      'Team FSG. Full Throttle.', 'Rain or Shine, We Move', 'Built in the Trenches',
+      'Clock In With Purpose', 'Built for the Hard Days', 'Roza Built. Roza Backed.'
     ];
     setQuote(phrases[Math.floor(Math.random() * phrases.length)]);
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'proposals') {
-      fetchSAMData('janitorial')
-        .then((data) => {
-          console.log('RAW RESPONSE:', data);
-          setRawData(data); // For debug
-          if (data && data.opportunities && data.opportunities.length > 0) {
-            setSamResults(data.opportunities);
-            setFetchError(null);
-          } else {
-            setSamResults([]);
-            setFetchError('No opportunities found or unexpected response structure.');
-          }
-        })
-        .catch((err) => {
-          console.error('Fetch error:', err);
-          setFetchError('Failed to fetch data.');
-        });
-    }
-  }, [activeTab]);
+  const handleSearch = () => {
+    if (!searchTerm.trim()) return;
+    setIsLoading(true);
+    setFetchError(null);
+    fetchSAMData(searchTerm.trim())
+      .then((data) => {
+        if (data?.opportunities?.length > 0) {
+          setSamResults(data.opportunities);
+        } else {
+          setSamResults([]);
+          setFetchError('No opportunities found or unexpected response structure.');
+        }
+      })
+      .catch((err) => {
+        console.error('Fetch error:', err);
+        setFetchError('Failed to fetch data.');
+        setSamResults([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
       <aside className="w-64 bg-gray-800 p-6 space-y-4">
         <h2 className="text-2xl font-bold mb-4">Roza Dashboard</h2>
         {['overview', 'calendar', 'tasks', 'contacts', 'proposals'].map((tab) => (
@@ -63,7 +58,6 @@ export default function Dashboard() {
         ))}
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 p-8">
         <h1 className="text-3xl font-semibold mb-6">
           {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
@@ -80,48 +74,49 @@ export default function Dashboard() {
           </>
         )}
 
-        {activeTab === 'calendar' && (
-          <div className="bg-gray-700 p-8 rounded text-center">[ Calendar Component Placeholder ]</div>
-        )}
-
-        {activeTab === 'tasks' && (
-          <div className="space-y-2">
-            <div className="bg-gray-700 p-4 rounded">Task 1</div>
-            <div className="bg-gray-700 p-4 rounded">Task 2</div>
-            <div className="bg-gray-700 p-4 rounded">Task 3</div>
-          </div>
-        )}
-
-        {activeTab === 'contacts' && (
-          <div className="space-y-2">
-            <div className="bg-gray-700 p-4 rounded">John Doe - Builder</div>
-            <div className="bg-gray-700 p-4 rounded">Crystal - Realtor</div>
-          </div>
-        )}
-
         {activeTab === 'proposals' && (
           <div className="bg-gray-700 p-6 rounded space-y-4">
-            <h3 className="text-xl font-semibold mb-4">Proposal Template</h3>
+            <h3 className="text-xl font-semibold">Proposal Template</h3>
             <p className="text-gray-300">[Placeholder for contract data input]</p>
+
+            <div className="mt-4 space-y-2">
+              <label htmlFor="search" className="block font-semibold">Search SAM.gov</label>
+              <div className="flex space-x-2">
+                <input
+                  id="search"
+                  type="text"
+                  className="p-2 rounded text-black flex-1"
+                  placeholder="Enter keyword (e.g., janitorial, construction)"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button
+                  className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+                  onClick={handleSearch}
+                >
+                  Search
+                </button>
+              </div>
+            </div>
 
             <h4 className="text-lg font-semibold mt-6">Recent Opportunities:</h4>
 
-            {/* DEBUG DATA BLOCK */}
             <pre className="text-xs text-yellow-400 whitespace-pre-wrap bg-gray-800 p-2 rounded">
-              {JSON.stringify(rawData, null, 2)}
+              {JSON.stringify(samResults, null, 2)}
             </pre>
 
+            {isLoading && <p className="text-gray-400">Loading...</p>}
             {fetchError && <p className="text-red-400">{fetchError}</p>}
 
-            {samResults.length > 0 ? (
-              samResults.map((item, index) => (
-                <div key={index} className="bg-gray-800 p-4 rounded mb-2">
-                  <p className="font-bold">{item.title}</p>
-                  <p className="text-sm text-gray-400">{item.naics}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-400">No data yet or still loading...</p>
+            {!isLoading && !fetchError && samResults.length > 0 && (
+              <div className="space-y-2">
+                {samResults.map((item, index) => (
+                  <div key={index} className="bg-gray-800 p-4 rounded">
+                    <p className="font-bold">{item.title}</p>
+                    <p className="text-sm text-gray-400">{item.naics}</p>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
