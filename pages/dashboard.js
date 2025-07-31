@@ -54,8 +54,8 @@ export default function Dashboard() {
   // Handle keyword search
   const handleSearch = async () => {
     const data = await fetchSAMData(searchTerm);
-    if (data && data.opportunities && data.opportunities.length > 0) {
-      setSamResults(data.results);
+    if (data && data.opportunitiesData?.opportunities?.length > 0) {
+      setSamResults(data.opportunitiesData.opportunities);
       setFetchError(null);
     } else {
       setSamResults([]);
