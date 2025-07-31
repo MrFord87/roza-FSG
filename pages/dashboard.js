@@ -1,77 +1,128 @@
-import { useEffect, useState } from 'react'; import { fetchSAMData } from '../utils/api';
+import { useEffect, useState } from 'react';
+import { fetchSAMData } from '../utils/api';
 
-export default function Dashboard() { const [activeTab, setActiveTab] = useState('overview'); const [samResults, setSamResults] = useState([]); const [fetchError, setFetchError] = useState(null); const [searchTerm, setSearchTerm] = useState(''); const [randomPhrase, setRandomPhrase] = useState('');
+export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [samResults, setSamResults] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [location, setLocation] = useState('');
+  const [naics, setNaics] = useState('');
 
-useEffect(() => { const phrases = [ 'Win Today', 'One Contract at a Time', 'Roza is Scanning the Federal Skies... ✨', 'Opportunities Await — Let’s Find Them' ]; const random = phrases[Math.floor(Math.random() * phrases.length)]; setRandomPhrase(random); }, []);
+  const [randomPhrase, setRandomPhrase] = useState('');
 
-const handleSearch = async () => { const data = await fetchSAMData(searchTerm); if (data && data.results && data.results.length > 0) { setSamResults(data.results); setFetchError(null); } else { setSamResults([]); setFetchError('No results found — try a different keyword or refine your search.'); } };
+  useEffect(() => {
+    const phrases = [
+      'Win Today',
+      'One Contract at a Time',
+      'Roza is Scanning the Federal Skies...',
+      'Let’s Find Your Next Opportunity',
+      'Success Starts with One Search'
+    ];
+    const randomIndex = Math.floor(Math.random() * phrases.length);
+    setRandomPhrase(phrases[randomIndex]);
+  }, []);
 
-return ( <div className="flex min-h-screen bg-gray-900 text-white"> <main className="flex-1 p-8"> <h1 className="text-3xl font-semibold mb-6">Roza Dashboard</h1> <div className="space-x-4 mb-6"> <button onClick={() => setActiveTab('overview')}>Overview</button> <button onClick={() => setActiveTab('calendar')}>Calendar</button> <button onClick={() => setActiveTab('tasks')}>Tasks</button> <button onClick={() => setActiveTab('contacts')}>Contacts</button> <button onClick={() => setActiveTab('proposals')}>Proposals</button> </div>
+  const handleSearch = async () => {
+    const data = await fetchSAMData(searchTerm, location, naics);
+    if (data && data.results && data.results.length > 0) {
+      setSamResults(data.results);
+      setFetchError(null);
+    } else {
+      setSamResults([]);
+      setFetchError('No results found — try a different keyword or refine your search.');
+    }
+  };
 
-{activeTab === 'overview' && (
-      <div>
-        <p className="text-green-400 font-medium">✅ Overview is looking good!</p>
-      </div>
-    )}
+  return (
+    <div className="flex min-h-screen bg-gray-900 text-white">
+      <main className="flex-1 p-8">
+        <h1 className="text-3xl font-semibold mb-6">Roza Dashboard</h1>
 
-    {activeTab === 'calendar' && (
-      <div>
-        <p>📅 Calendar events loading soon.</p>
-      </div>
-    )}
+        <div className="mb-4 space-x-4">
+          <button onClick={() => setActiveTab('overview')}>Overview</button>
+          <button onClick={() => setActiveTab('calendar')}>Calendar</button>
+          <button onClick={() => setActiveTab('tasks')}>Tasks</button>
+          <button onClick={() => setActiveTab('contacts')}>Contacts</button>
+          <button onClick={() => setActiveTab('proposals')}>Proposals</button>
+        </div>
 
-    {activeTab === 'tasks' && (
-      <div>
-        <p>✅ Tasks synced with project tracker.</p>
-      </div>
-    )}
-
-    {activeTab === 'contacts' && (
-      <div>
-        <p>📇 Contacts integration coming soon.</p>
-      </div>
-    )}
-
-    {activeTab === 'proposals' && (
-      <div>
-        <h2 className="text-xl font-semibold mt-4 mb-2">Proposal Template</h2>
-        <p className="text-gray-300 mb-4">[Placeholder for contract data input]</p>
-        <p className="text-lg mb-2 font-medium">Let’s find your next opportunity!</p>
-        <p className="italic text-sm text-yellow-300 mb-4">{randomPhrase}</p>
-
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="e.g. construction, security, IT..."
-          className="text-black px-2 py-1 rounded mr-2"
-        />
-        <button
-          onClick={handleSearch}
-          className="px-4 py-1 bg-blue-600 hover:bg-blue-700 rounded"
-        >
-          Search SAM.gov
-        </button>
-
-        <h3 className="text-lg mt-6 mb-2 font-semibold">Recent Opportunities:</h3>
-        {fetchError ? (
-          <p className="text-red-400">🚫 {fetchError}</p>
-        ) : (
-          <ul className="list-disc ml-6">
-            {samResults.map((opp, index) => (
-              <li key={index} className="mb-2">
-                <span className="font-semibold">{opp.title || opp.noticeId}</span>
-                <div className="text-sm text-gray-400">
-                  {opp.agency?.name} | {opp.naics?.code} | {opp.type}
-                </div>
-              </li>
-            ))}
-          </ul>
+        {activeTab === 'overview' && (
+          <div>
+            <p className="text-green-400 font-medium">✅ Overview is looking good!</p>
+          </div>
         )}
-      </div>
-    )}
-  </main>
-</div>
 
-); }
+        {activeTab === 'calendar' && (
+          <div>
+            <p>📅 Calendar events loading soon.</p>
+          </div>
+        )}
 
+        {activeTab === 'tasks' && (
+          <div>
+            <p>📋 Tasks synced with project tracker.</p>
+          </div>
+        )}
+
+        {activeTab === 'contacts' && (
+          <div>
+            <p>📇 Contacts integration coming soon.</p>
+          </div>
+        )}
+
+        {activeTab === 'proposals' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Proposal Template</h2>
+            <p className="mb-4">[Placeholder for contract data input]</p>
+
+            <h3 className="text-lg font-semibold mb-2">{randomPhrase}</h3>
+
+            <div className="flex space-x-2 mb-4">
+              <input
+                type="text"
+                placeholder="Keyword (e.g. janitorial)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="p-2 text-black"
+              />
+              <input
+                type="text"
+                placeholder="Location (e.g. TX)"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="p-2 text-black"
+              />
+              <input
+                type="text"
+                placeholder="NAICS Code"
+                value={naics}
+                onChange={(e) => setNaics(e.target.value)}
+                className="p-2 text-black"
+              />
+              <button
+                onClick={handleSearch}
+                className="px-4 bg-blue-600 text-white rounded"
+              >
+                Search SAM.gov
+              </button>
+            </div>
+
+            {fetchError && (
+              <p className="text-red-500">🚫 {fetchError}</p>
+            )}
+
+            <h4 className="mt-6 text-lg font-semibold">Recent Opportunities:</h4>
+            <ul className="list-disc ml-6 mt-2">
+              {samResults.map((opportunity, index) => (
+                <li key={index}>
+                  <strong>{opportunity.title || 'Untitled Opportunity'}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
