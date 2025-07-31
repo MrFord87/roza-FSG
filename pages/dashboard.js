@@ -55,7 +55,7 @@ export default function Dashboard() {
   const handleSearch = async () => {
     const data = await fetchSAMData(searchTerm);
     if (data && data.opportunities && data.opportunities.length > 0) {
-      setSamResults(data.opportunities);
+      setSamResults(data.results);
       setFetchError(null);
     } else {
       setSamResults([]);
