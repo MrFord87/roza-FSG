@@ -7,7 +7,7 @@ export async function fetchSAMData(keyword) {
 
   try {
     const response = await axios.get(url);
-    console.log('API FULL RESPONSE:',data);
+    console.log('API FULL RESPONSE:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching SAM.gov data:', error.response?.data || error.message);
