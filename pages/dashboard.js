@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'; 
-import { fetchSAMData } from '../utils/api';
+import { useEffect, useState } from 'react'; import { fetchSAMData } from '../utils/api';
 
-export default function Dashboard() { 
-  const [activeTab, setActiveTab] = useState('overview'); const [samResults, setSamResults] = useState([]); const [fetchError, setFetchError] = useState(null); const [filters, setFilters] = useState({ keyword: '', naics: '', state: '', postedFrom: '', postedTo: '' });
+export default function Dashboard() { const [activeTab, setActiveTab] = useState('overview'); const [samResults, setSamResults] = useState([]); const [fetchError, setFetchError] = useState(null); const [searchTerm, setSearchTerm] = useState(''); const [naics, setNaics] = useState(''); const [state, setState] = useState(''); const [postedFrom, setPostedFrom] = useState(''); const [postedTo, setPostedTo] = useState('');
 
-const handleSearch = async () => { const data = await fetchSAMData(filters); if (data && data.results && data.results.length > 0) { setSamResults(data.results); setFetchError(null); } else { setSamResults([]); setFetchError('No opportunities found or unexpected response structure.'); } };
+const handleSearch = async () => { const data = await fetchSAMData({ keyword: searchTerm, naics, state, postedFrom, postedTo }); console.log('API FULL RESPONSE:', data); if (data && data.opportunities && data.opportunities.length > 0) { setSamResults(data.opportunities); setFetchError(null); } else { setSamResults([]); setFetchError('No opportunities found or unexpected response structure.'); } };
+
+useEffect(() => { const phrases = [ 'Win Today', 'One Contract at a Time', 'FSG Solutions is the Solution', 'Step by Step, Fellas', 'It Takes ALL of Us', 'Billion Dollar Company', 'Keep Digging', 'Let’s Eat', 'Own the Morning', 'Nobody’s Coming — It’s On Us', 'Let the Work Speak', 'Build What They Said You Couldn’t', 'Rain or Shine, We Move', 'Dream Bigger, Execute Sharper', 'All Gas, No Brakes', 'Be the Standard', 'Earned, Not Given', 'Clock In With Purpose', 'One More Rep', 'Built for the Hard Days', 'Brick by Brick', 'Clean Bins, Clean Wins', 'Talk Less, Clean More', 'Focus. Grind. Grow.', 'Built in the Trenches', 'Respect the Process', 'Leadership Looks Like This', 'Championship Habits Only', 'Team FSG. Full Throttle.', 'We Don’t Fold', 'Roza Built. Roza Backed.', 'Handle Business, Humbly', 'We’re Not Done Yet', 'Purpose Over Pressure', 'Fighter Jets Only' ]; const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)]; document.title = randomPhrase; }, []);
 
 return ( <div className="flex min-h-screen bg-gray-900 text-white"> <aside className="w-64 bg-gray-800 p-6 space-y-4"> <h2 className="text-2xl font-bold mb-4">Roza Dashboard</h2> {['overview', 'calendar', 'tasks', 'contacts', 'proposals'].map((tab) => ( <button key={tab} onClick={() => setActiveTab(tab)} className={text-left w-full p-2 rounded hover:bg-gray-700 ${ activeTab === tab ? 'bg-gray-700' : '' }} > {tab.charAt(0).toUpperCase() + tab.slice(1)} </button> ))} </aside>
 
@@ -13,65 +13,100 @@ return ( <div className="flex min-h-screen bg-gray-900 text-white"> <aside class
       {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
     </h1>
 
+    {activeTab === 'overview' && (
+      <>
+        <p className="mb-4 text-xl italic text-yellow-400">{document.title}</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-gray-700 p-4 rounded">Total Clients</div>
+          <div className="bg-gray-700 p-4 rounded">Open Tasks</div>
+          <div className="bg-gray-700 p-4 rounded">Upcoming Deadlines</div>
+        </div>
+      </>
+    )}
+
+    {activeTab === 'calendar' && (
+      <div className="bg-gray-700 p-8 rounded text-center">[ Calendar Component Placeholder ]</div>
+    )}
+
+    {activeTab === 'tasks' && (
+      <div className="space-y-2">
+        <div className="bg-gray-700 p-4 rounded">Task 1</div>
+        <div className="bg-gray-700 p-4 rounded">Task 2</div>
+        <div className="bg-gray-700 p-4 rounded">Task 3</div>
+      </div>
+    )}
+
+    {activeTab === 'contacts' && (
+      <div className="space-y-2">
+        <div className="bg-gray-700 p-4 rounded">John Doe - Builder</div>
+        <div className="bg-gray-700 p-4 rounded">Crystal - Realtor</div>
+      </div>
+    )}
+
     {activeTab === 'proposals' && (
       <div className="bg-gray-700 p-6 rounded space-y-4">
-        <h3 className="text-xl font-semibold mb-4">Search for Federal Contracts</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <h3 className="text-xl font-semibold mb-4">Proposal Template</h3>
+        <p className="text-gray-300">[Placeholder for contract data input]</p>
+
+        <div className="space-y-2">
           <input
             type="text"
-            placeholder="Keyword"
-            value={filters.keyword}
-            onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
-            className="p-2 rounded bg-gray-800 text-white"
+            placeholder="Search Term (e.g., janitorial)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-2 rounded bg-gray-800 text-white placeholder-gray-400"
           />
           <input
             type="text"
-            placeholder="NAICS Code"
-            value={filters.naics}
-            onChange={(e) => setFilters({ ...filters, naics: e.target.value })}
-            className="p-2 rounded bg-gray-800 text-white"
+            placeholder="NAICS Code (optional)"
+            value={naics}
+            onChange={(e) => setNaics(e.target.value)}
+            className="w-full p-2 rounded bg-gray-800 text-white placeholder-gray-400"
           />
           <input
             type="text"
             placeholder="State (e.g., TX)"
-            value={filters.state}
-            onChange={(e) => setFilters({ ...filters, state: e.target.value })}
-            className="p-2 rounded bg-gray-800 text-white"
+            value={state}
+            onChange={(e) => setState(e.target.value)}
+            className="w-full p-2 rounded bg-gray-800 text-white placeholder-gray-400"
           />
           <input
             type="date"
             placeholder="Posted From"
-            value={filters.postedFrom}
-            onChange={(e) => setFilters({ ...filters, postedFrom: e.target.value })}
-            className="p-2 rounded bg-gray-800 text-white"
+            value={postedFrom}
+            onChange={(e) => setPostedFrom(e.target.value)}
+            className="w-full p-2 rounded bg-gray-800 text-white"
           />
           <input
             type="date"
             placeholder="Posted To"
-            value={filters.postedTo}
-            onChange={(e) => setFilters({ ...filters, postedTo: e.target.value })}
-            className="p-2 rounded bg-gray-800 text-white"
+            value={postedTo}
+            onChange={(e) => setPostedTo(e.target.value)}
+            className="w-full p-2 rounded bg-gray-800 text-white"
           />
           <button
             onClick={handleSearch}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded mt-2"
           >
-            Search
+            Search Opportunities
           </button>
         </div>
 
         {fetchError && <p className="text-red-400">{fetchError}</p>}
 
-        {samResults.length > 0 ? (
-          samResults.map((item, index) => (
-            <div key={index} className="bg-gray-800 p-4 rounded mb-2">
-              <p className="font-bold">{item.title || 'Untitled Opportunity'}</p>
-              <p className="text-sm text-gray-400">NAICS: {item.naics || 'N/A'} | State: {item.state || 'N/A'}</p>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-400">No results yet.</p>
-        )}
+        <div>
+          <h4 className="text-lg font-semibold mt-4">Recent Opportunities:</h4>
+          {samResults.length > 0 ? (
+            samResults.map((item, index) => (
+              <div key={index} className="bg-gray-800 p-4 rounded mb-2">
+                <p className="font-bold">{item.title || 'Untitled Opportunity'}</p>
+                <p className="text-sm text-gray-400">{item.naics || 'N/A'} | {item.placeOfPerformance?.state || 'N/A'}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-400">No data yet or still loading...</p>
+          )}
+        </div>
       </div>
     )}
   </main>
