@@ -24,7 +24,3 @@ export async function fetchSAMData({ keyword = '', naics = '', state = '', poste
     return null;
   }
 }
-
-
-✅ Done! The utils/api.js file is now updated with the full query support: keyword, NAICS code, state, and posted date range. It also logs the full API response for better debugging. Ready to test in Roza!
-
