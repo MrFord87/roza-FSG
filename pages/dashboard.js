@@ -40,6 +40,13 @@ export default function Dashboard() {
   };
 
   return (
+    {/* 🔍 DEBUG: Display the full request URL */}
+{requestUrl && (
+  <div className="text-sm text-green-400 my-4">
+    🔍 <strong>Request URL:</strong> <br />
+    <code className="break-words">{requestUrl}</code>
+  </div>
+)}
     <div className="flex min-h-screen bg-gray-900 text-white">
       <main className="flex-1 p-8">
         <h1 className="text-3xl font-semibold mb-6">Roza Dashboard</h1>
