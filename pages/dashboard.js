@@ -69,4 +69,3 @@ return ( <div> {/* 🔍 DEBUG: Display the full request URL */} {requestUrl && (
 
 ); }
 
-
