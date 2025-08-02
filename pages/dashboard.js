@@ -1,40 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import fetchSAMData from '../utils/api';
+import { useState } from 'react';
 
 export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState('');
   const [naics, setNaics] = useState('');
-  const [results, setResults] = useState([]);
-  const [randomPhrase, setRandomPhrase] = useState('');
-  const [requestUrl, setRequestUrl] = useState('');
   const [samResults, setSamResults] = useState([]);
   const [fetchError, setFetchError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
-
-  useEffect(() => {
-    const phrases = [
-      'Win Today',
-      'One Contract at a Time',
-      'Roza is Scanning the Federal Skies...',
-      'Let’s Find Your Next Opportunity',
-      'Success Starts with One Search'
-    ];
-    const randomIndex = Math.floor(Math.random() * phrases.length);
-    setRandomPhrase(phrases[randomIndex]);
-  }, []);
+  const [requestUrl, setRequestUrl] = useState('');
+  const [activeTab, setActiveTab] = useState('proposals');
 
   const handleSearch = async () => {
     const fullUrl = `https://api.sam.gov/opportunities/v2/search?api_key=GAPIibFeKRJPKpjkhxUlCRU1fjkynbAQ2tfyMVEj&q=${searchTerm}&placeOfPerformance.stateCode=${location}&naics=${naics}&sort=modifiedDate&limit=10`;
+
     setRequestUrl(fullUrl);
 
-    const data = await fetchSAMData(searchTerm, location, naics);
-    if (data && data.results && data.results.length > 0) {
-      setSamResults(data.results);
-      setFetchError(null);
-    } else {
-      setSamResults([]);
-      setFetchError('No results found — try a different keyword or refine your search.');
+    try {
+      const response = await fetch(fullUrl);
+      const data = await response.json();
+
+      if (data && data.results && data.results.length > 0) {
+        setSamResults(data.results);
+        setFetchError(null);
+      } else {
+        setSamResults([]);
+        setFetchError('No results found — try a different keyword or refine your search.');
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+      setFetchError('Error fetching data from SAM.gov');
     }
   };
 
@@ -62,34 +55,43 @@ export default function Dashboard() {
 
           {activeTab === 'proposals' && (
             <div>
-              <input
-                type="text"
-                placeholder="Keyword"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="State Code"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="NAICS"
-                value={naics}
-                onChange={(e) => setNaics(e.target.value)}
-              />
-              <button onClick={handleSearch}>Search</button>
+              <div className="mb-4 space-x-2">
+                <input
+                  type="text"
+                  placeholder="Keyword"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="State (e.g., TX)"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="NAICS Code"
+                  value={naics}
+                  onChange={(e) => setNaics(e.target.value)}
+                />
+                <button onClick={handleSearch}>Search</button>
+              </div>
 
-              {fetchError && <p className="text-red-500">{fetchError}</p>}
-              <ul>
-                {samResults.map((opportunity, index) => (
-                  <li key={index}>
-                    <strong>{opportunity.title || 'Untitled Opportunity'}</strong>
-                  </li>
-                ))}
-              </ul>
+              {fetchError && (
+                <div className="text-red-400 mt-4">
+                  ⚠️ {fetchError}
+                </div>
+              )}
+
+              {samResults.length > 0 && (
+                <ul className="space-y-4">
+                  {samResults.map((opportunity, index) => (
+                    <li key={index}>
+                      <strong>{opportunity.title || 'Untitled Opportunity'}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
         </main>
