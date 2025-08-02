@@ -40,6 +40,7 @@ export default function Dashboard() {
   };
 
   return (
+    <div>
     {/* 🔍 DEBUG: Display the full request URL */}
 {requestUrl && (
   <div className="text-sm text-green-400 my-4">
