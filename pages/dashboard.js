@@ -53,8 +53,8 @@ export default function Dashboard() {
         <h1 className="text-3xl font-semibold mb-6">Roza Dashboard</h1>
   
       </main>
-      </div>
-      </div>
+    </div>
+  </div>
       );
 
         <div className="mb-4 space-x-4">
