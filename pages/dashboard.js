@@ -55,7 +55,7 @@ export default function Dashboard() {
       </main>
     </div>
   </div>
-      );
+ );
 
         <div className="mb-4 space-x-4">
           <button onClick={() => setActiveTab('overview')}>Overview</button>
