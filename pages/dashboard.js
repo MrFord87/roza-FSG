@@ -51,6 +51,11 @@ export default function Dashboard() {
     <div className="flex min-h-screen bg-gray-900 text-white">
       <main className="flex-1 p-8">
         <h1 className="text-3xl font-semibold mb-6">Roza Dashboard</h1>
+  
+      </main>
+      </div>
+      </div>
+      );
 
         <div className="mb-4 space-x-4">
           <button onClick={() => setActiveTab('overview')}>Overview</button>
