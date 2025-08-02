@@ -136,7 +136,7 @@ export default function Dashboard() {
                 <li key={index}>
                   <strong>{opportunity.title || 'Untitled Opportunity'}</strong>
                 </li>
-              ))}
+              )}
             </ul>
           </div>
         )}
