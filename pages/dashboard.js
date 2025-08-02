@@ -53,5 +53,19 @@ return ( <div> {/* 🔍 DEBUG: Display the full request URL */} {requestUrl && (
           />
           <button onClick={handleSearch}>Search</button>
 
-          {fetchError && <p className
+          {fetchError && <p className="text-red-500">{fetchError}</p>}
+          <ul>
+            {samResults.map((opportunity, index) => (
+              <li key={index}>
+                <strong>{opportunity.title || 'Untitled Opportunity'}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </main>
+  </div>
+</div>
+
+); }
 
