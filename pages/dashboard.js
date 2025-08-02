@@ -8,6 +8,9 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState('');
   const [naics, setNaics] = useState('');
+  const [results, setResults] = useState([]);
+  
+  const [requestUrl, setRequestUrl] = useState(''); // 👈🏾 ADD THIS HE
 
   const [randomPhrase, setRandomPhrase] = useState('');
 
@@ -24,6 +27,8 @@ export default function Dashboard() {
   }, []);
 
   const handleSearch = async () => {
+ const fullUrl =`https://api.sam.gov/opportunities/v2/search?api_key=GAPIibFeKRJPKpjkhxUlCRU1fjkynbAQ2tfyMVEj&q=${searchTerm}&placeOfPerformance.stateCode=${location}&naics=${naics}&sort=modifiedDate&limit=10`;
+    setRequestUrl(fullUrl);
     const data = await fetchSAMData(searchTerm, location, naics);
     if (data && data.results && data.results.length > 0) {
       setSamResults(data.results);
