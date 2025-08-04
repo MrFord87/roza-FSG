@@ -1,101 +1,61 @@
-import { useState } from 'react';
+import { useState } from 'react'; import { Button } from '@/components/ui/button'; import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'; import { Card, CardContent } from '@/components/ui/card';
 
-export default function Dashboard() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [location, setLocation] = useState('');
-  const [naics, setNaics] = useState('');
-  const [samResults, setSamResults] = useState([]);
-  const [fetchError, setFetchError] = useState(null);
-  const [requestUrl, setRequestUrl] = useState('');
-  const [activeTab, setActiveTab] = useState('proposals');
+export default function Dashboard() { const [activeTab, setActiveTab] = useState('overview');
 
-  const handleSearch = async () => {
-    const fullUrl = `https://api.sam.gov/opportunities/v2/search?api_key=GAPIibFeKRJPKpjkhxUlCRU1fjkynbAQ2tfyMVEj&q=${searchTerm}&placeOfPerformance.stateCode=${location}&naics=${naics}&sort=modifiedDate&limit=10`;
+return ( <div className="min-h-screen bg-black text-white"> <header className="bg-gradient-to-r from-yellow-900 to-black py-6 px-8 shadow-md"> <h1 className="text-3xl font-bold tracking-wide text-yellow-400">ROZA Hub</h1> <p className="text-sm text-yellow-200">Your central command center for contracts</p> </header>
 
-    setRequestUrl(fullUrl);
+<main className="p-8">
+    <Tabs defaultValue="overview" onValueChange={setActiveTab}>
+      <TabsList className="flex space-x-4 mb-6 border-b border-yellow-800">
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="calendar">Calendar</TabsTrigger>
+        <TabsTrigger value="contacts">Contacts</TabsTrigger>
+        <TabsTrigger value="proposals">Proposals</TabsTrigger>
+        <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
+        <TabsTrigger value="bookmarks">Bookmarks</TabsTrigger>
+      </TabsList>
 
-    try {
-      const response = await fetch(fullUrl);
-      const data = await response.json();
+      <TabsContent value="overview">
+        <Card className="bg-yellow-950 border border-yellow-700 mb-4">
+          <CardContent className="p-4">
+            <h2 className="text-xl font-semibold text-yellow-300 mb-2">Mission Control</h2>
+            <p className="text-yellow-100">Track tasks, deadlines, and ownership all in one place.</p>
+          </CardContent>
+        </Card>
+      </TabsContent>
 
-      if (data && data.results && data.results.length > 0) {
-        setSamResults(data.results);
-        setFetchError(null);
-      } else {
-        setSamResults([]);
-        setFetchError('No results found — try a different keyword or refine your search.');
-      }
-    } catch (error) {
-      console.error('Fetch error:', error);
-      setFetchError('Error fetching data from SAM.gov');
-    }
-  };
+      <TabsContent value="calendar">
+        <Card className="bg-yellow-950 border border-yellow-700 mb-4">
+          <CardContent className="p-4">Calendar view goes here.</CardContent>
+        </Card>
+      </TabsContent>
 
-  return (
-    <div>
-      {/* 🔍 DEBUG: Display the full request URL */}
-      {requestUrl && (
-        <div className="text-sm text-green-400 my-4">
-          🔍 <strong>Request URL:</strong> <br />
-          <code className="break-words">{requestUrl}</code>
-        </div>
-      )}
+      <TabsContent value="contacts">
+        <Card className="bg-yellow-950 border border-yellow-700 mb-4">
+          <CardContent className="p-4">List of your key contacts (e.g., Antoine, Anthony, Ubaldo).</CardContent>
+        </Card>
+      </TabsContent>
 
-      <div className="flex min-h-screen bg-gray-900 text-white">
-        <main className="flex-1 p-8">
-          <h1 className="text-3xl font-semibold mb-6">Roza Dashboard</h1>
+      <TabsContent value="proposals">
+        <Card className="bg-yellow-950 border border-yellow-700 mb-4">
+          <CardContent className="p-4">Proposal drafts, templates, and assignments.</CardContent>
+        </Card>
+      </TabsContent>
 
-          <div className="mb-4 space-x-4">
-            <button onClick={() => setActiveTab('overview')}>Overview</button>
-            <button onClick={() => setActiveTab('calendar')}>Calendar</button>
-            <button onClick={() => setActiveTab('tasks')}>Tasks</button>
-            <button onClick={() => setActiveTab('contacts')}>Contacts</button>
-            <button onClick={() => setActiveTab('proposals')}>Proposals</button>
-          </div>
+      <TabsContent value="knowledge">
+        <Card className="bg-yellow-950 border border-yellow-700 mb-4">
+          <CardContent className="p-4">FAQ, RFP vs RFQ, glossary of terms.</CardContent>
+        </Card>
+      </TabsContent>
 
-          {activeTab === 'proposals' && (
-            <div>
-              <div className="mb-4 space-x-2">
-                <input
-                  type="text"
-                  placeholder="Keyword"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <input
-                  type="text"
-                  placeholder="State (e.g., TX)"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-                <input
-                  type="text"
-                  placeholder="NAICS Code"
-                  value={naics}
-                  onChange={(e) => setNaics(e.target.value)}
-                />
-                <button onClick={handleSearch}>Search</button>
-              </div>
+      <TabsContent value="bookmarks">
+        <Card className="bg-yellow-950 border border-yellow-700 mb-4">
+          <CardContent className="p-4">Links to SAM.gov, FPDS, SBA, and more.</CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
+  </main>
+</div>
 
-              {fetchError && (
-                <div className="text-red-400 mt-4">
-                  ⚠️ {fetchError}
-                </div>
-              )}
+); }
 
-              {samResults.length > 0 && (
-                <ul className="space-y-4">
-                  {samResults.map((opportunity, index) => (
-                    <li key={index}>
-                      <strong>{opportunity.title || 'Untitled Opportunity'}</strong>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  );
-}
