@@ -1,7 +1,7 @@
 export default function Home() {
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-red-500">🚀 Tailwind is Working!</h1>
+    <div className="min-h-screen bg-green-900 text-yellow-300 flex items-center justify-center">
+      <h1 className="text-6xl font-extrabold underline">🔥 TAILWIND IS NOW ACTIVE 🔥</h1>
     </div>
   );
 }
