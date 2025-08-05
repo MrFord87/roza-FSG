@@ -1,41 +1,45 @@
-import React, { useState } from 'react';
-
-export default function LoginForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Login Attempt:', { email, password });
-    // Here you’d typically call an API or auth function
-  };
-
+export default function Login() {
   return (
-    <div style={{ backgroundColor: '#222', padding: '2rem', borderRadius: '8px' }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ width: '100%', marginBottom: '1rem' }}
-          />
-        </div>
-        <div>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: '100%', marginBottom: '1rem' }}
-          />
-        </div>
-        <button type="submit" style={{ width: '100%', padding: '0.5rem', backgroundColor: '#444', color: 'white', border: 'none' }}>
-          Login
-        </button>
-      </form>
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-3xl font-bold mb-4 text-center">Welcome to Roza 👋🏾</h1>
+        <p className="text-center text-gray-400 mb-6">
+          Please log in to access your dashboard
+        </p>
+
+        <form className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block mb-1 font-medium">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block mb-1 font-medium">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 transition text-white py-2 rounded"
+          >
+            Login
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
