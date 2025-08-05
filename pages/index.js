@@ -1,3 +1,4 @@
+// pages/index.js
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
@@ -5,8 +6,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/dashboard');
+    router.push('/login');
   }, []);
 
-  return null; // Optional: add a spinner here
+  return null;
 }
