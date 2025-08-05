@@ -3,10 +3,16 @@ import { useState } from 'react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleLogin = (e) => {
-    e.preventDefault();
+  const [password, setPassword] = 
+    
+    const handleLogin = (e) => {
+  e.preventDefault();
+  if (email === 'a.ford@fsgsolutions' && password === 'FSG123$%^') {
+    router.push('/dashboard');
+  } else {
+    alert('Invalid credentials. Try again.');
+  }
+};
     console.log('Logging in with:', { email, password });
   };
 
