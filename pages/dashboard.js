@@ -27,9 +27,9 @@
       </div>
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition mt-4"
       >
-        Sign In
+        Login
       </button>
     </form>
   </div>
