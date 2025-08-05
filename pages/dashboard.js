@@ -46,9 +46,17 @@ export default function Dashboard() {
                 Search SAM.gov
               </button>
             </div>
-            <p className="mt-4 text-red-500">🚫 No results found — try a different keyword or refine your search.</p>
+            <p className="mt-4 text-red-500">
+              🚫 No results found — try a different keyword or refine your search.
+            </p>
           </div>
         );
+      case 'folders':
+        return <p>📁 Folders: Store and organize key project documents here.</p>;
+      case 'bookmarks':
+        return <p>🔖 Bookmarks: Quick links to helpful contracting websites.</p>;
+      case 'info':
+        return <p>📘 Info Tab: Contracting definitions, guides, and glossary.</p>;
       default:
         return null;
     }
@@ -59,8 +67,17 @@ export default function Dashboard() {
       <h1 className="text-4xl font-bold mb-6">Roza Dashboard</h1>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6">
-        {['overview', 'calendar', 'tasks', 'contacts', 'proposals'].map((tab) => (
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[
+          'overview',
+          'calendar',
+          'tasks',
+          'contacts',
+          'proposals',
+          'folders',
+          'bookmarks',
+          'info',
+        ].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -75,7 +92,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Login Box */}
+      {/* Login Box (only visible on overview) */}
       {activeTab === 'overview' && (
         <form className="bg-gray-800 p-6 rounded shadow-md w-full max-w-sm mb-10">
           <label htmlFor="email" className="block text-sm font-medium mb-1">
