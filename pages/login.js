@@ -1,40 +1,38 @@
-// pages/login.js
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 
-export default function LoginPage() {
+export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = 
-    
-    const handleLogin = (e) => {
-  e.preventDefault();
-  if (email === 'a.ford@fsgsolutions' && password === 'FSG123$%^') {
-    router.push('/dashboard');
-  } else {
-    alert('Invalid credentials. Try again.');
-  }
-};
-    console.log('Logging in with:', { email, password });
+  const [password, setPassword] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (email === 'a.ford@fsgsolutions' && password === 'FSG123$%^') {
+      router.push('/dashboard');
+    } else {
+      alert('Invalid credentials. Try again.');
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-      <div className="bg-gray-800 p-8 rounded shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4 text-center">Welcome Back</h2>
-        <p className="text-sm text-gray-400 mb-6 text-center">Please enter your credentials to continue.</p>
-        <form onSubmit={handleLogin} className="space-y-4">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-sm">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Welcome Back</h2>
+        <form onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="Email"
-            className="w-full px-4 py-2 rounded bg-gray-700 text-white focus:outline-none"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-2 mb-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
           <input
             type="password"
             placeholder="Password"
-            className="w-full px-4 py-2 rounded bg-gray-700 text-white focus:outline-none"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 mb-6 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
           <button
             type="submit"
