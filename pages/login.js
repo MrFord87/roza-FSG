@@ -8,7 +8,7 @@ export default function Login() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (email === 'a.ford@fsgsolutions' && password === 'FSG123$%^') {
+    if (email === 'a.ford@fsgsolutions.net' && password === 'FSG123$%^') {
       router.push('/dashboard');
     } else {
       alert('Invalid credentials. Try again.');
