@@ -7,5 +7,5 @@ export default function Home() {
     document.documentElement.classList.add('dark');
   }, []);
 
-  return <Login />;
+  return <Login/>;
 }
