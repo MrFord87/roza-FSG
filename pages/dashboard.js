@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+iport Glossary from "../components/Glossary";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("home");
@@ -20,7 +21,7 @@ export default function Dashboard() {
       case "assistant":
         return <div>🤖 AI Proposal Assistant launching soon...</div>;
       case "info":
-        return <div>📚 Contracting terms and definitions coming soon...</div>;
+        return <Glossary/>;
       case "bookmarks":
         return <div>🔖 Bookmark and quick links coming soon...</div>;
       default:
