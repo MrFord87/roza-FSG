@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Calendar from "../components/Calendar";
 import Glossary from "../components/Glossary";
 
 export default function Dashboard() {
@@ -9,7 +10,7 @@ export default function Dashboard() {
       case "home":
         return <div>Welcome to ROZA! Select a tab to get started.</div>;
       case "calendar":
-        return <Calender/>;
+        return <Calendar />;
       case "contacts":
         return <div>📇 Contacts management coming soon...</div>;
       case "proposals":
@@ -21,7 +22,7 @@ export default function Dashboard() {
       case "assistant":
         return <div>🤖 AI Proposal Assistant launching soon...</div>;
       case "info":
-        return <Glossary/>;
+        return <Glossary />;
       case "bookmarks":
         return <div>🔖 Bookmark and quick links coming soon...</div>;
       default:
@@ -30,40 +31,38 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="dark">
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white">
-        <header className="bg-gray-800 text-white px-6 py-4 shadow">
-          <h1 className="text-xl font-semibold">ROZA Dashboard</h1>
-        </header>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <header className="bg-gray-800 text-white px-6 py-4 shadow">
+        <h1 className="text-xl font-semibold">ROZA Dashboard</h1>
+      </header>
 
-        <nav className="flex flex-wrap gap-3 px-6 py-3 bg-gray-800 border-b border-gray-700 text-sm">
-          {[
-            { label: "Home", key: "home" },
-            { label: "Calendar", key: "calendar" },
-            { label: "Contacts", key: "contacts" },
-            { label: "Proposals", key: "proposals" },
-            { label: "Contracts", key: "contracts" },
-            { label: "Tasks", key: "tasks" },
-            { label: "AI Assistant", key: "assistant" },
-            { label: "Info", key: "info" },
-            { label: "Bookmarks", key: "bookmarks" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              className={`px-4 py-2 rounded transition-all duration-200 ${
-                activeTab === tab.key
-                  ? "bg-yellow-700 text-white"
-                  : "bg-gray-700 hover:bg-yellow-800"
-              }`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      <nav className="flex flex-wrap gap-3 px-6 py-3 bg-gray-800 border-b border-gray-700 text-sm">
+        {[
+          { label: "Home", key: "home" },
+          { label: "Calendar", key: "calendar" },
+          { label: "Contacts", key: "contacts" },
+          { label: "Proposals", key: "proposals" },
+          { label: "Contracts", key: "contracts" },
+          { label: "Tasks", key: "tasks" },
+          { label: "AI Assistant", key: "assistant" },
+          { label: "Info", key: "info" },
+          { label: "Bookmarks", key: "bookmarks" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            className={`px-4 py-2 rounded transition-all duration-200 ${
+              activeTab === tab.key
+                ? "bg-yellow-700 text-white"
+                : "bg-gray-700 hover:bg-yellow-800"
+            }`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
 
-        <main className="p-6">{renderTabContent()}</main>
-      </div>
+      <main className="p-6">{renderTabContent()}</main>
     </div>
   );
 }
