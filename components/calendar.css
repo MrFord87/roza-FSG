@@ -1,0 +1,22 @@
+/* calendar.css */
+@import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+/* Optional: Override base styles */
+.rbc-calendar {
+  background-color: white;
+  font-family: Arial, sans-serif;
+}
+
+.rbc-toolbar {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.rbc-event {
+  background-color: #3b82f6;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
