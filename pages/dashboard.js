@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   return (
     <div className="dark">
-      <div className="min-h-screen bg-gray-900 text-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white">
         <header className="bg-gray-800 text-white px-6 py-4 shadow">
           <h1 className="text-xl font-semibold">ROZA Dashboard</h1>
         </header>
