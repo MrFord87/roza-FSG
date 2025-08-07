@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-iport Glossary from "../components/Glossary";
+import Glossary from "../components/Glossary";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("home");
