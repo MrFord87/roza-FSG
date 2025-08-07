@@ -50,8 +50,8 @@ export default function Dashboard() {
             key={tab.key}
             className={`px-4 py-2 rounded transition-all duration-200 ${
               activeTab === tab.key
-                ? "bg-yellow-700 text-white"
-                : "bg-gray-700 hover:bg-yellow-800"
+                ? "bg-yellow-600 text-black font-bold"
+                : "bg-gray-700 hover:bg-yellow-700"
             }`}
             onClick={() => setActiveTab(tab.key)}
           >
