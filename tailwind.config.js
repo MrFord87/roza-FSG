@@ -3,15 +3,10 @@ module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx}", // <- Add this if using the /app directory
   ],
   theme: {
-    extend: {
-      colors: {
-        background: "#1a1a1a",
-        primary: "#8b5e3c",
-        secondary: "#c49e78",
-      },
-    },
+    extend: {},
   },
   plugins: [],
 }
