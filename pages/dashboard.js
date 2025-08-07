@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Calendar from "../components/Calendar";
+import Calendar from "../components/Calender";
 import Glossary from "../components/Glossary";
 
 export default function Dashboard() {
