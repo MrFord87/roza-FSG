@@ -1,11 +1,6 @@
-import { useEffect } from 'react';
-import Dashboard from './dashboard';
+import React from 'react';
+import Login from './login';
 
 export default function Home() {
-  useEffect(() => {
-    // Manually enable dark mode by adding 'dark' to the html element
-    document.documentElement.classList.add('dark');
-  }, []);
-
-  return <Login.js/>;
+  return <Login />;
 }
