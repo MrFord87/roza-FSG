@@ -8,8 +8,9 @@ const hours = Array.from({ length: 12 }, (_, i) => `${i + 8}:00 AM`).concat(
 const CalendarApp = () => {
   const today = new Date();
   const year = today.getFullYear();
-  const month = today.getMonth(); // 0-indexed
+  const month = today.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayIndex = new Date(year, month, 1).getDay();
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState('');
@@ -50,7 +51,7 @@ const CalendarApp = () => {
 
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-2 mb-6">
-        {Array.from({ length: new Date(year, month, 1).getDay() }).map((_, i) => (
+        {Array.from({ length: firstDayIndex }).map((_, i) => (
           <div key={`empty-${i}`} />
         ))}
         {Array.from({ length: daysInMonth }, (_, i) => {
@@ -72,7 +73,7 @@ const CalendarApp = () => {
         })}
       </div>
 
-      {/* Note Input Modal */}
+      {/* Note Input */}
       {selectedDate && (
         <div className="p-4 border rounded bg-white shadow">
           <h2 className="text-lg font-semibold mb-2">Add Note for {selectedDate}</h2>
