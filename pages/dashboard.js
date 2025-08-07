@@ -29,38 +29,40 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <header className="bg-gray-800 text-white px-6 py-4 shadow">
-        <h1 className="text-xl font-semibold">ROZA Dashboard</h1>
-      </header>
+    <div className="dark">
+      <div className="min-h-screen bg-gray-900 text-white">
+        <header className="bg-gray-800 text-white px-6 py-4 shadow">
+          <h1 className="text-xl font-semibold">ROZA Dashboard</h1>
+        </header>
 
-      <nav className="flex flex-wrap gap-3 px-6 py-3 bg-gray-800 border-b border-gray-700 text-sm">
-        {[
-          { label: "Home", key: "home" },
-          { label: "Calendar", key: "calendar" },
-          { label: "Contacts", key: "contacts" },
-          { label: "Proposals", key: "proposals" },
-          { label: "Contracts", key: "contracts" },
-          { label: "Tasks", key: "tasks" },
-          { label: "AI Assistant", key: "assistant" },
-          { label: "Info", key: "info" },
-          { label: "Bookmarks", key: "bookmarks" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            className={`px-4 py-2 rounded transition-all duration-200 ${
-              activeTab === tab.key
-                ? "bg-yellow-600 text-black font-bold"
-                : "bg-gray-700 hover:bg-yellow-700"
-            }`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+        <nav className="flex flex-wrap gap-3 px-6 py-3 bg-gray-800 border-b border-gray-700 text-sm">
+          {[
+            { label: "Home", key: "home" },
+            { label: "Calendar", key: "calendar" },
+            { label: "Contacts", key: "contacts" },
+            { label: "Proposals", key: "proposals" },
+            { label: "Contracts", key: "contracts" },
+            { label: "Tasks", key: "tasks" },
+            { label: "AI Assistant", key: "assistant" },
+            { label: "Info", key: "info" },
+            { label: "Bookmarks", key: "bookmarks" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              className={`px-4 py-2 rounded transition-all duration-200 ${
+                activeTab === tab.key
+                  ? "bg-yellow-700 text-white"
+                  : "bg-gray-700 hover:bg-yellow-800"
+              }`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-      <main className="p-6">{renderTabContent()}</main>
+        <main className="p-6">{renderTabContent()}</main>
+      </div>
     </div>
   );
 }
