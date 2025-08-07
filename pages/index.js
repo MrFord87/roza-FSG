@@ -8,4 +8,3 @@ export default function Home() {
     </div>
   );
 }
-<h1 className="text-red-500">TEST COLOR</h1>
