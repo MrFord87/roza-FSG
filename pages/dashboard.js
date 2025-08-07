@@ -1,89 +1,66 @@
-import { useState } from 'react';
-import { useRouter } from 'next/router';
+import React, { useState } from "react";
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("home");
 
-  // TEMPORARY: allow login bypass
-  const [loggedIn, setLoggedIn] = useState(true); // replace with actual session/auth check later
-
-  if (!loggedIn) {
-    router.push('/login');
-    return null;
-  }
-
-  const tabs = ['Overview', 'Calendar', 'Tasks', 'Contacts', 'Contracts', 'Proposals'];
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "home":
+        return <div>Welcome to ROZA! Select a tab to get started.</div>;
+      case "calendar":
+        return <div>📅 Calendar coming soon...</div>;
+      case "contacts":
+        return <div>📇 Contacts management coming soon...</div>;
+      case "proposals":
+        return <div>📝 Proposal builder coming soon...</div>;
+      case "contracts":
+        return <div>📁 Contract folders and details coming soon...</div>;
+      case "tasks":
+        return <div>✅ Task tracking with color-coded responsibility coming soon...</div>;
+      case "assistant":
+        return <div>🤖 AI Proposal Assistant launching soon...</div>;
+      case "info":
+        return <div>📚 Contracting terms and definitions coming soon...</div>;
+      case "bookmarks":
+        return <div>🔖 Bookmark and quick links coming soon...</div>;
+      default:
+        return <div>Welcome to ROZA! Select a tab to get started.</div>;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <h1 className="text-3xl font-bold mb-6">Roza Dashboard</h1>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <header className="bg-gray-800 text-white px-6 py-4 shadow">
+        <h1 className="text-xl font-semibold">ROZA Dashboard</h1>
+      </header>
 
-      <div className="flex flex-wrap gap-2 mb-8">
-        {tabs.map(tab => (
+      <nav className="flex flex-wrap gap-3 px-6 py-3 bg-gray-800 border-b border-gray-700 text-sm">
+        {[
+          { label: "Home", key: "home" },
+          { label: "Calendar", key: "calendar" },
+          { label: "Contacts", key: "contacts" },
+          { label: "Proposals", key: "proposals" },
+          { label: "Contracts", key: "contracts" },
+          { label: "Tasks", key: "tasks" },
+          { label: "AI Assistant", key: "assistant" },
+          { label: "Info", key: "info" },
+          { label: "Bookmarks", key: "bookmarks" },
+        ].map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab.toLowerCase())}
-            className={`px-4 py-2 rounded ${
-              activeTab === tab.toLowerCase()
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 hover:bg-gray-600'
+            key={tab.key}
+            className={`px-4 py-2 rounded transition-all duration-200 ${
+              activeTab === tab.key
+                ? "bg-yellow-700 text-white"
+                : "bg-gray-700 hover:bg-yellow-800"
             }`}
+            onClick={() => setActiveTab(tab.key)}
           >
-            {tab}
+            {tab.label}
           </button>
         ))}
-      </div>
+      </nav>
 
-      {/* === Tab Content === */}
-      <div className="bg-gray-800 p-6 rounded shadow-lg">
-        {activeTab === 'overview' && (
-          <>
-            <h2 className="text-xl font-semibold mb-2">Welcome to Roza 🖤</h2>
-            <p className="mb-4">Your Contract Execution & Intelligence Hub</p>
-          </>
-        )}
-
-        {activeTab === 'calendar' && (
-          <>
-            <h2 className="text-xl font-semibold mb-2">📅 Calendar</h2>
-            <p>Track deadlines, meetings, and project milestones.</p>
-          </>
-        )}
-
-        {activeTab === 'tasks' && (
-          <>
-            <h2 className="text-xl font-semibold mb-2">✅ Tasks</h2>
-            <p>Manage your task list and stay on top of action items.</p>
-          </>
-        )}
-
-        {activeTab === 'contacts' && (
-          <>
-            <h2 className="text-xl font-semibold mb-2">📇 Contacts</h2>
-            <p>Maintain your network of agency reps, partners, and vendors.</p>
-          </>
-        )}
-
-        {activeTab === 'contracts' && (
-          <>
-            <h2 className="text-xl font-semibold mb-2">📁 Contracts</h2>
-            <p>
-              Browse, search, and manage your contract folders.
-              (Coming soon: folder creation, file upload, and categorization).
-            </p>
-          </>
-        )}
-
-        {activeTab === 'proposals' && (
-          <>
-            <h2 className="text-xl font-semibold mb-2">📝 Proposal Templates</h2>
-            <p>
-              Start drafting, editing, and managing proposals for upcoming contracts.
-            </p>
-          </>
-        )}
-      </div>
+      <main className="p-6">{renderTabContent()}</main>
     </div>
   );
 }
