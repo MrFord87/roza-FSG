@@ -42,15 +42,11 @@ const CalendarApp = () => {
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">ROZA Calendar</h1>
 
-      {/* Weekday Headers */}
-      <div className="grid grid-cols-7 text-center font-semibold mb-2">
+      {/* Unified Calendar Grid */}
+      <div className="grid grid-cols-7 gap-2 text-center font-semibold mb-2">
         {daysOfWeek.map((day) => (
-          <div key={day}>{day}</div>
+          <div key={day} className="py-2 border-b">{day}</div>
         ))}
-      </div>
-
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2 mb-6">
         {Array.from({ length: firstDayIndex }).map((_, i) => (
           <div key={`empty-${i}`} />
         ))}
@@ -63,11 +59,11 @@ const CalendarApp = () => {
             <button
               key={day}
               onClick={() => handleDateClick(day)}
-              className={`p-2 border rounded text-left h-16 ${
+              className={`p-2 h-20 border rounded text-left ${
                 hasNote ? 'bg-yellow-100' : 'hover:bg-blue-100'
               }`}
             >
-              {day}
+              <span className="font-medium">{day}</span>
             </button>
           );
         })}
