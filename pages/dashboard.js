@@ -9,7 +9,7 @@ export default function Dashboard() {
       case "home":
         return <div>Welcome to ROZA! Select a tab to get started.</div>;
       case "calendar":
-        return <div>📅 Calendar coming soon...</div>;
+        return <Calender/>;
       case "contacts":
         return <div>📇 Contacts management coming soon...</div>;
       case "proposals":
