@@ -9,7 +9,7 @@ const Dashboard = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case "home":
-        return <div>Welcome to ROZA! 
+        return <div>Welcome to ROZA! Select a tab to get started.</div>;
 
       case "calendar":
         return <Calendar />;
