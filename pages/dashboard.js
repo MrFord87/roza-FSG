@@ -10,16 +10,11 @@ const Dashboard = () => {
 
   // Load saved tab on first render
   useEffect(() => {
-    const savedTab = localStorage.getItem("activeTab");
+    
     if (savedTab) {
       setActiveTab(savedTab);
     }
   }, []);
-
-  // Save tab every time it changes
-  useEffect(() => {
-    localStorage.setItem("activeTab", activeTab);
-  }, [activeTab]);
 
   const renderTabContent = () => {
     switch (activeTab) {
