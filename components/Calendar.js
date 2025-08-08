@@ -83,6 +83,15 @@ const MyCalendar = () => {
   return (
     <div style={{ height: '85vh', padding: '1rem' }}>
       <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>ROZA Calendar</h1>
+
+  <input
+  type="text"
+  placeholder="Test typing"
+  value={note}
+  onChange={(e) => setNote(e.target.value)}
+  style={{ border:'1px solid red', width:'100%', marginBottom:8, background:'white', color:'black' }}
+/>
+  
       <Calendar
         localizer={localizer}
         events={events}
