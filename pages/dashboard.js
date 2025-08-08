@@ -57,7 +57,7 @@ export default function Dashboard() {
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'calendar',  label: 'Calendar'  },
     { key: 'contacts',  label: 'Contacts'  },
-    { key: 'info',  label: 'info'  },
+    { key: 'info',  label: 'Info'  },
   ];
 
   return (
