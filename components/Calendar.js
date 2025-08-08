@@ -1,282 +1,133 @@
-// Calendar.js
-import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+// components/Contacts.js
+import React, { useState, useEffect } from 'react';
 
-const localizer = momentLocalizer(moment);
+const STORAGE_KEY = 'rozaContacts';
 
-/** Simple portal modal that renders to document.body */
-function PortalModal({ open, title, children, onClose }) {
-  const modalRef = useRef(null);
+const Contacts = () => {
+  const [contacts, setContacts] = useState([]);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
 
+  // Load saved contacts on mount (browser only)
   useEffect(() => {
-    if (!open) return;
-    // Trap focus on open (best-effort)
-    const prev = document.activeElement;
-    modalRef.current?.focus?.();
-    return () => prev && prev.focus && prev.focus();
-  }, [open]);
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setContacts(parsed);
+      }
+    } catch (e) {
+      console.warn('Failed to load contacts from localStorage:', e);
+    }
+  }, []);
 
-  if (!open) return null;
-  if (typeof document === 'undefined') return null; // SSR guard
-
-  return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 99999,
-        background: 'rgba(0,0,0,0.4)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-      }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
-    >
-      <div
-        ref={modalRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        style={{
-          width: '100%',
-          maxWidth: 520,
-          background: 'white',
-          color: 'black',
-          borderRadius: 8,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-          padding: 16,
-          outline: 'none',
-        }}
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <h3 style={{ margin: 0 }}>{title}</h3>
-          <button onClick={onClose} aria-label="Close">✕</button>
-        </div>
-        <div style={{ marginTop: 12 }}>{children}</div>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-const MyCalendar = () => {
-  const [events, setEvents] = useState([]);
-  const [note, setNote] = useState('');
-  const [selectedSlot, setSelectedSlot] = useState(null);   // Date for new event start
-  const [selectedEvent, setSelectedEvent] = useState(null); // Event being edited
-  const inputRef = useRef(null);
-
-  // Focus the main input inside the modal when it opens
+  // Persist whenever contacts change (browser only)
   useEffect(() => {
-    if (!selectedSlot && !selectedEvent) return;
-    const t = setTimeout(() => inputRef.current?.focus(), 60);
-    return () => clearTimeout(t);
-  }, [selectedSlot, selectedEvent]);
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
+    } catch (e) {
+      console.warn('Failed to save contacts to localStorage:', e);
+    }
+  }, [contacts]);
 
-  // Click empty day/slot -> open ADD modal
-  const handleSelectSlot = ({ start }) => {
-    setSelectedEvent(null);
-    setSelectedSlot(start);
-    setNote('');
+  const addContact = () => {
+    const n = name.trim();
+    const p = phone.trim();
+    if (!n || !p) return;
+    const newContact = { id: Date.now(), name: n, phone: p };
+    setContacts(prev => [newContact, ...prev]);
+    setName('');
+    setPhone('');
   };
 
-  // Click event -> open EDIT modal
-  const handleSelectEvent = (event) => {
-    setSelectedSlot(null);
-    setSelectedEvent(event);
-    setNote(event.title);
-  };
-
-  // Create new event
-  const handleSaveNew = () => {
-    if (!note.trim() || !selectedSlot) return;
-    const start = new Date(selectedSlot);
-    const end = moment(start).add(1, 'hour').toDate(); // default 1 hour
-    setEvents((prev) => [...prev, { title: note.trim(), start, end, completed: false }]);
-    setSelectedSlot(null);
-    setNote('');
-  };
-
-  // Update existing event
-  const handleUpdate = () => {
-    if (!selectedEvent) return;
-    setEvents((prev) =>
-      prev.map((ev) => (ev === selectedEvent ? { ...ev, title: note.trim() } : ev))
-    );
-    setSelectedEvent(null);
-    setNote('');
-  };
-
-  // Delete existing event
-  const handleDelete = () => {
-    if (!selectedEvent) return;
-    setEvents((prev) => prev.filter((ev) => ev !== selectedEvent));
-    setSelectedEvent(null);
-    setNote('');
-  };
-
-  // Mark as completed
-  const handleComplete = () => {
-    if (!selectedEvent) return;
-    setEvents((prev) =>
-      prev.map((ev) => (ev === selectedEvent ? { ...ev, completed: true } : ev))
-    );
-    setSelectedEvent(null);
-    setNote('');
-  };
-
-  // Style events (completed -> green + strikethrough)
-  const eventStyleGetter = (event) => {
-    const style = {
-      backgroundColor: event.completed ? 'green' : '#2563eb',
-      color: 'white',
-      borderRadius: 4,
-      border: 'none',
-      display: 'block',
-      textDecoration: event.completed ? 'line-through' : 'none',
-    };
-    return { style };
+  const removeContact = (id) => {
+    setContacts(prev => prev.filter(c => c.id !== id));
   };
 
   return (
-    <div style={{ height: '85vh', padding: '1rem' }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>ROZA Calendar</h1>
+    <div style={{ padding: '1rem', maxWidth: 720, margin: '0 auto' }}>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: 12 }}>Contacts</h1>
 
-      <Calendar
-        localizer={localizer}
-        events={events}
-        selectable
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
-        startAccessor="start"
-        endAccessor="end"
-        views={['month', 'week', 'day']}
-        popup
-        longPressThreshold={50}
-        eventPropGetter={eventStyleGetter}
-        style={{ height: '70vh', background: 'white', color: 'black' }}
-      />
-
-      {/* ADD NOTE (Portal Modal) */}
-      <PortalModal
-        open={!!selectedSlot}
-        title={`Add Note – ${selectedSlot ? moment(selectedSlot).format('MMM D, YYYY h:mm A') : ''}`}
-        onClose={() => {
-          setSelectedSlot(null);
-          setNote('');
+      {/* Add Contact */}
+      <div
+        style={{
+          marginBottom: 16,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr auto',
+          gap: 8,
         }}
       >
         <input
-          ref={inputRef}
           type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Type your note here..."
-          autoFocus
-          inputMode="text"
-          style={{
-            width: '100%',
-            padding: '0.5rem',
-            marginBottom: '0.75rem',
-            borderRadius: 4,
-            border: '1px solid #ccc',
-            background: 'white',
-            color: 'black',
-          }}
+          placeholder="Full name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={{ padding: '0.5rem' }}
         />
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button onClick={() => { setSelectedSlot(null); setNote(''); }}>Cancel</button>
-          <button
-            onClick={handleSaveNew}
-            style={{
-              backgroundColor: '#2563eb',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              border: 'none',
-              borderRadius: 4,
-            }}
-          >
-            Save Note
-          </button>
-        </div>
-      </PortalModal>
-
-      {/* EDIT NOTE (Portal Modal) */}
-      <PortalModal
-        open={!!selectedEvent}
-        title="Edit Note"
-        onClose={() => {
-          setSelectedEvent(null);
-          setNote('');
-        }}
-      >
         <input
-          ref={inputRef}
-          type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Update your note..."
-          autoFocus
-          inputMode="text"
-          style={{
-            width: '100%',
-            padding: '0.5rem',
-            marginBottom: '0.75rem',
-            borderRadius: 4,
-            border: '1px solid #ccc',
-            background: 'white',
-            color: 'black',
-          }}
+          type="tel"
+          placeholder="Phone number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          style={{ padding: '0.5rem' }}
         />
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button onClick={() => setSelectedEvent(null)}>Cancel</button>
-          <button
-            onClick={handleUpdate}
+        <button
+          onClick={addContact}
+          style={{
+            backgroundColor: '#2563eb',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            border: 'none',
+            borderRadius: 4,
+          }}
+        >
+          Add
+        </button>
+      </div>
+
+      {/* Contacts List */}
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {contacts.map((c) => (
+          <li
+            key={c.id}
             style={{
-              backgroundColor: '#2563eb',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              border: 'none',
-              borderRadius: 4,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              border: '1px solid #ccc',
+              padding: '0.75rem',
+              borderRadius: 6,
+              background: 'white',
+              color: 'black',
+              marginBottom: 8,
             }}
           >
-            Update
-          </button>
-          <button
-            onClick={handleDelete}
-            style={{
-              backgroundColor: 'red',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              border: 'none',
-              borderRadius: 4,
-            }}
-          >
-            Delete
-          </button>
-          <button
-            onClick={handleComplete}
-            style={{
-              backgroundColor: 'green',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              border: 'none',
-              borderRadius: 4,
-            }}
-          >
-            Mark Completed
-          </button>
-        </div>
-      </PortalModal>
+            <div>
+              <strong>{c.name}</strong>
+              <div style={{ fontSize: 14, color: '#555' }}>{c.phone}</div>
+            </div>
+            <button
+              onClick={() => removeContact(c.id)}
+              style={{
+                background: 'transparent',
+                border: '1px solid #e11d48',
+                color: '#e11d48',
+                padding: '0.4rem 0.7rem',
+                borderRadius: 4,
+              }}
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+        {contacts.length === 0 && (
+          <li style={{ color: '#777' }}>No contacts yet.</li>
+        )}
+      </ul>
     </div>
   );
 };
 
-export default MyCalendar;
+export default Contacts;
