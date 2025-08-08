@@ -6,7 +6,7 @@ import Info from"../components/Info";
 import Sources from"../components/Sources";
   
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Load saved tab on first render
   useEffect(() => {
