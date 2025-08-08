@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import Calendar from "../components/Calendar";
 import Contacts from "../components/Contacts";
 import Glossary from "../components/Glossary";
-
+import Info from'../components/Info
+  
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
 
@@ -38,7 +39,7 @@ const Dashboard = () => {
       case "assistant":
         return <div>🤖 AI Proposal Assistant launching soon...</div>;
       case "info":
-        return <Glossary />;
+        return <Info />;
       case "bookmarks":
         return <div>🔖 Bookmark and quick links coming soon...</div>;
       default:
