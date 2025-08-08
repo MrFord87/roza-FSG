@@ -10,6 +10,11 @@ export default function Login() {
   const handleLogin = (e) => {
     e.preventDefault();
     if (email === 'a.ford@fsgsolutions.net' && password === 'FSG123$%^') {
+
+      // 🔹 Force dashboard to start on Home tab
+      localStorage.setItem('rozaActiveTab', 'home'); // or 'calendar'
+      window.location.hash = 'home';
+
       router.push('/dashboard');
     } else {
       setError('Invalid email or password');
