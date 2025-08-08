@@ -6,34 +6,70 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 const localizer = momentLocalizer(moment);
 
 const MyCalendar = () => {
-  const [events, setEvents] = useState([
-    {
-      title: 'Demo Event',
-      start: new Date(),
-      end: new Date(),
-    },
-  ]);
-
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [events, setEvents] = useState([]);
   const [note, setNote] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const handleSelectSlot = ({ start }) => {
     setSelectedSlot(start);
+    setSelectedEvent(null);
     setNote('');
   };
 
-  const handleSaveNote = () => {
+  const handleSave = () => {
     if (!note.trim() || !selectedSlot) return;
 
-    const newEvent = {
-      title: note,
-      start: selectedSlot,
-      end: new Date(moment(selectedSlot).add(1, 'hours').toDate()),
-    };
-
-    setEvents((prevEvents) => [...prevEvents, newEvent]);
+    setEvents([
+      ...events,
+      {
+        title: note,
+        start: selectedSlot,
+        end: moment(selectedSlot).add(1, 'hour').toDate(),
+        completed: false,
+      },
+    ]);
     setSelectedSlot(null);
     setNote('');
+  };
+
+  const handleSelectEvent = (event) => {
+    setSelectedEvent(event);
+    setSelectedSlot(null);
+    setNote(event.title);
+  };
+
+  const handleUpdate = () => {
+    setEvents(events.map(ev => 
+      ev === selectedEvent ? { ...ev, title: note } : ev
+    ));
+    setSelectedEvent(null);
+    setNote('');
+  };
+
+  const handleDelete = () => {
+    setEvents(events.filter(ev => ev !== selectedEvent));
+    setSelectedEvent(null);
+    setNote('');
+  };
+
+  const handleComplete = () => {
+    setEvents(events.map(ev => 
+      ev === selectedEvent ? { ...ev, completed: true } : ev
+    ));
+    setSelectedEvent(null);
+    setNote('');
+  };
+
+  const eventStyleGetter = (event) => {
+    let style = {
+      backgroundColor: event.completed ? 'green' : '#2563eb',
+      color: 'white',
+      borderRadius: '4px',
+      border: 'none',
+      display: 'block',
+    };
+    return { style };
   };
 
   return (
@@ -43,27 +79,72 @@ const MyCalendar = () => {
         localizer={localizer}
         events={events}
         selectable
-        onSelectSlot={handleSelectSlot}
         startAccessor="start"
         endAccessor="end"
+        onSelectSlot={handleSelectSlot}
+        onSelectEvent={handleSelectEvent}
         style={{ height: '70vh' }}
+        eventPropGetter={eventStyleGetter}
       />
 
+      {/* Add New Note */}
       {selectedSlot && (
-        <div style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem', borderRadius: '5px' }}>
+        <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
           <h3>Add Note for: {moment(selectedSlot).format('MMMM Do YYYY, h:mm A')}</h3>
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Type your note here..."
-            style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem', marginBottom: '1rem' }}
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              marginTop: '0.5rem',
+              marginBottom: '1rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+            }}
           />
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button onClick={() => setSelectedSlot(null)}>Cancel</button>
-            <button onClick={handleSaveNote} style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: '4px' }}>
+            <button
+              onClick={handleSave}
+              style={{
+                backgroundColor: '#2563eb',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                border: 'none',
+                borderRadius: '4px',
+              }}
+            >
               Save Note
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Existing Event */}
+      {selectedEvent && (
+        <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+          <h3>Edit Note</h3>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              marginTop: '0.5rem',
+              marginBottom: '1rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+            }}
+          />
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={() => setSelectedEvent(null)}>Cancel</button>
+            <button onClick={handleUpdate} style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px' }}>Update</button>
+            <button onClick={handleDelete} style={{ backgroundColor: 'red', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px' }}>Delete</button>
+            <button onClick={handleComplete} style={{ backgroundColor: 'green', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px' }}>Mark Completed</button>
           </div>
         </div>
       )}
