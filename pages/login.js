@@ -12,7 +12,8 @@ export default function Login() {
     if (email === 'a.ford@fsgsolutions.net' && password === 'FSG123$%^') {
 
       // 🔹 Force dashboard to start on Home tab
-      localStorage.setItem('rozaActiveTab', 'home'); // or 'calendar'
+      localStorage.setItem('rozaActiveTab', 'home');// or 'calendar'
+     wrouter.push('/dashboard#home');
       window.location.hash = 'home';
 
       router.push('/dashboard');
