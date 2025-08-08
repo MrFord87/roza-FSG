@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Calendar from "../components/Calendar";
 import Contacts from "../components/Contacts";
 import Glossary from "../components/Glossary";
-import Info from'../components/Info";
+import Info from"../components/Info";
   
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
