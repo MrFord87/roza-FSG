@@ -16,7 +16,7 @@ export default function Login() {
       router.push('/dashboard#home');
       window.location.hash = 'home';
 
-      router.push('/dashboard');
+      
     } else {
       setError('Invalid email or password');
     }
