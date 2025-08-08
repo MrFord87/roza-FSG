@@ -6,7 +6,7 @@ import MyCalendar from '../components/Calendar';
 import Contacts from '../components/Contacts';
 import Glossary from '../components/Glossary';
 
-const DEFAULT_TAB = 'dashboard'; // 'dashboard' | 'calendar' | 'contacts' | 'glossary'
+const DEFAULT_TAB = 'dashboard'; // 'dashboard' | 'calendar' | 'contacts' | 'info'
 
 function DashboardHome() {
   return (
