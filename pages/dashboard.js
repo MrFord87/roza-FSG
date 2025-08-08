@@ -1,107 +1,80 @@
-// Dashboard.js
-import React, { useEffect, useState } from 'react';
+import React, { useState } from "react";
+import Calendar from "../components/Calendar";
+import Contacts from "../components/Contacts";
+import Glossary from "../components/Glossary";
 
-// ⬇️ Adjust paths if needed
-import MyCalendar from '../components/Calendar';
-import Contacts from '../components/Contacts';
-import Contracts from '../components/Contracts';
-import Bookmarks from '../components/Bookmarks';
-import Glossary from '../components/Glossary'; // This is your Info tab
+const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState("home");
 
-const DEFAULT_TAB = 'dashboard';
-
-function DashboardHome() {
-  return (
-    <div style={{ padding: '1rem' }}>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>Welcome to ROZA</h2>
-      <p style={{ opacity: 0.8 }}>
-        
-      </p>
-    </div>
-  );
-}
-
-export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
-
-  // Restore on mount
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const fromHash = window.location.hash ? window.location.hash.replace('#', '') : '';
-    const fromStorage = localStorage.getItem('rozaActiveTab') || '';
-    const initial = fromHash || fromStorage || DEFAULT_TAB;
-    setActiveTab(initial);
-  }, []);
-
-  // Persist when activeTab changes
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!activeTab) return;
-    window.location.hash = activeTab;
-    localStorage.setItem('rozaActiveTab', activeTab);
-  }, [activeTab]);
-
-  const renderTab = () => {
+  const renderTabContent = () => {
     switch (activeTab) {
-      case 'calendar':
-        return <MyCalendar />;
-      case 'contacts':
+      case "home":
+        return <div>Welcome to ROZA! 
+
+      case "calendar":
+        return <Calendar />;
+
+      case "contacts":
         return <Contacts />;
-      case 'contracts':
-        return <Contracts />;
-      case 'bookmarks':
-        return <Bookmarks />;
-      case 'info':
+
+      case "proposals":
+        return <div>📝 Proposal builder coming soon...</div>;
+
+      case "contracts":
+        return <div>📂 Contract folders and details coming soon...</div>;
+
+      case "tasks":
+        return (
+          <div>✅ Task tracking with color-coded responsibility coming soon...</div>
+        );
+
+      case "assistant":
+        return <div>🤖 AI Proposal Assistant launching soon...</div>;
+
+      case "info":
         return <Glossary />;
-      case 'dashboard':
+
+      case "bookmarks":
+        return <div>🔖 Bookmark and quick links coming soon...</div>;
+
       default:
-        return <DashboardHome />;
+        return <div>Welcome to ROZA! Select a tab to get started.</div>;
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Top Nav */}
-      <nav
-        style={{
-          display: 'flex',
-          gap: 8,
-          padding: '0.75rem 1rem',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          position: 'sticky',
-          top: 0,
-          background: 'transparent',
-          backdropFilter: 'blur(4px)',
-          zIndex: 10,
-        }}
-      >
+    <div className="min-h-screen bg-gray-900 text-white">
+      <header className="bg-gray-800 text-white px-6 py-4 shadow">
+        <h1 className="text-xl font-semibold">ROZA Dashboard</h1>
+      </header>
+
+      <nav className="flex flex-wrap gap-3 px-6 py-3 bg-gray-800 border-b border-gray-700">
         {[
-          { key: 'dashboard', label: 'Dashboard' },
-          { key: 'calendar', label: 'Calendar' },
-          { key: 'contacts', label: 'Contacts' },
-          { key: 'contracts', label: 'Contracts' },
-          { key: 'bookmarks', label: 'Bookmarks' },
-          { key: 'info', label: 'Info' }, // Shows Glossary
-        ].map((t) => (
+          { key: "home", label: "Home" },
+          { key: "calendar", label: "Calendar" },
+          { key: "contacts", label: "Contacts" },
+          { key: "proposals", label: "Proposals" },
+          { key: "contracts", label: "Contracts" },
+          { key: "tasks", label: "Tasks" },
+          { key: "assistant", label: "AI Assistant" },
+          { key: "info", label: "Info" },
+          { key: "bookmarks", label: "Bookmarks" },
+        ].map((tab) => (
           <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            style={{
-              padding: '0.5rem 0.9rem',
-              borderRadius: 8,
-              border: activeTab === t.key ? '1px solid #2563eb' : '1px solid rgba(255,255,255,0.2)',
-              background: activeTab === t.key ? '#2563eb' : 'transparent',
-              color: activeTab === t.key ? 'white' : 'inherit',
-              cursor: 'pointer',
-            }}
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 rounded ${
+              activeTab === tab.key ? "bg-blue-600" : "bg-gray-700"
+            }`}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </nav>
 
-      {/* Content */}
-      <main style={{ flex: 1 }}>{renderTab()}</main>
+      <main className="p-6">{renderTabContent()}</main>
     </div>
   );
-}
+};
+
+export default Dashboard;
