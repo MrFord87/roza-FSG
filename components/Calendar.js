@@ -11,12 +11,14 @@ const MyCalendar = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
+  // Handle clicking an empty time slot
   const handleSelectSlot = ({ start }) => {
     setSelectedSlot(start);
     setSelectedEvent(null);
     setNote('');
   };
 
+  // Save a new note into the calendar
   const handleSave = () => {
     if (!note.trim() || !selectedSlot) return;
 
@@ -33,12 +35,14 @@ const MyCalendar = () => {
     setNote('');
   };
 
+  // Handle clicking on an existing event
   const handleSelectEvent = (event) => {
     setSelectedEvent(event);
     setSelectedSlot(null);
     setNote(event.title);
   };
 
+  // Update existing event
   const handleUpdate = () => {
     setEvents(events.map(ev => 
       ev === selectedEvent ? { ...ev, title: note } : ev
@@ -47,12 +51,14 @@ const MyCalendar = () => {
     setNote('');
   };
 
+  // Delete existing event
   const handleDelete = () => {
     setEvents(events.filter(ev => ev !== selectedEvent));
     setSelectedEvent(null);
     setNote('');
   };
 
+  // Mark event as completed
   const handleComplete = () => {
     setEvents(events.map(ev => 
       ev === selectedEvent ? { ...ev, completed: true } : ev
@@ -61,6 +67,7 @@ const MyCalendar = () => {
     setNote('');
   };
 
+  // Style completed events
   const eventStyleGetter = (event) => {
     let style = {
       backgroundColor: event.completed ? 'green' : '#2563eb',
@@ -68,6 +75,7 @@ const MyCalendar = () => {
       borderRadius: '4px',
       border: 'none',
       display: 'block',
+      textDecoration: event.completed ? 'line-through' : 'none',
     };
     return { style };
   };
@@ -81,13 +89,14 @@ const MyCalendar = () => {
         selectable
         startAccessor="start"
         endAccessor="end"
-        onSelectSlot={handleSelectSlot}
+        onSelectSlot={handleSelectSlot}   // ✅ Wired correctly now
         onSelectEvent={handleSelectEvent}
         style={{ height: '70vh' }}
         eventPropGetter={eventStyleGetter}
+        views={['day', 'week', 'month']} // Can click in day/week
       />
 
-      {/* Add New Note */}
+      {/* Add new note */}
       {selectedSlot && (
         <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
           <h3>Add Note for: {moment(selectedSlot).format('MMMM Do YYYY, h:mm A')}</h3>
@@ -123,7 +132,7 @@ const MyCalendar = () => {
         </div>
       )}
 
-      {/* Edit Existing Event */}
+      {/* Edit existing event */}
       {selectedEvent && (
         <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
           <h3>Edit Note</h3>
