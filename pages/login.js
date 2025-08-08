@@ -14,8 +14,6 @@ export default function Login() {
       // 🔹 Force dashboard to start on Home tab
       localStorage.setItem('rozaActiveTab', 'home');// or 'calendar'
       router.push('/dashboard#home');
-      window.location.hash = 'home';
-
       
     } else {
       setError('Invalid email or password');
