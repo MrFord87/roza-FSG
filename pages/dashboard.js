@@ -3,6 +3,7 @@ import Calendar from "../components/Calendar";
 import Contacts from "../components/Contacts";
 import Glossary from "../components/Glossary";
 import Info from"../components/Info";
+import Sources from"../components/Sources':
   
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -28,6 +29,8 @@ const Dashboard = () => {
         return <Calendar />;
       case "contacts":
         return <Contacts />;
+      case "sources":
+        return <Sources />;
       case "proposals":
         return <div>📝 Proposal builder coming soon...</div>;
       case "contracts":
@@ -60,6 +63,7 @@ const Dashboard = () => {
           { key: "contacts", label: "Contacts" },
           { key: "proposals", label: "Proposals" },
           { key: "contracts", label: "Contracts" },
+          { key: "sources", label: "Sources" },
           { key: "tasks", label: "Tasks" },
           { key: "assistant", label: "AI Assistant" },
           { key: "info", label: "Info" },
