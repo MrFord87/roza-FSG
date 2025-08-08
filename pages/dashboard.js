@@ -13,7 +13,7 @@ function DashboardHome() {
     <div style={{ padding: '1rem' }}>
       <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>Welcome to ROZA</h2>
       <p style={{ opacity: 0.8 }}>
-        Pick a tab above to get started. Your selection will be remembered on refresh.
+        
       </p>
     </div>
   );
