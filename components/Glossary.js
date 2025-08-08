@@ -1,6 +1,10 @@
-import { useState } from 'react';
+  // components/Glossary.js
+import React, { useEffect, useMemo, useState } from 'react';
 
-const glossaryData = {
+const STORAGE_KEY = 'rozaGlossaryData';
+
+// ---- Default seed data (your existing list) ----
+const defaultGlossary = {
   A: [
     { term: 'ADA', definition: 'Americans with Disabilities Act – Prohibits discrimination against individuals with disabilities.' },
     { term: 'ADR', definition: 'Alternative Dispute Resolution – Resolving disputes outside of traditional forums.' },
@@ -102,28 +106,138 @@ const glossaryData = {
   Z: []
 };
 
-const Glossary = () => {
+const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+export default function Glossary() {
+  const [data, setData] = useState(defaultGlossary);
   const [selectedLetter, setSelectedLetter] = useState('A');
   const [searchTerm, setSearchTerm] = useState('');
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-  const filteredTerms = (glossaryData[selectedLetter] || []).filter((entry) =>
-    entry.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.definition.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Add-term form state
+  const [newTerm, setNewTerm] = useState('');
+  const [newDefinition, setNewDefinition] = useState('');
+  const [message, setMessage] = useState('');
+
+  // Load saved glossary (browser only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Ensure all letters exist
+        const merged = { ...defaultGlossary, ...parsed };
+        alphabet.forEach(l => { if (!merged[l]) merged[l] = []; });
+        setData(merged);
+      }
+    } catch (e) {
+      console.warn('Failed to load glossary:', e);
+    }
+  }, []);
+
+  // Persist glossary when changed
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn('Failed to save glossary:', e);
+    }
+  }, [data]);
+
+  const filteredTerms = useMemo(() => {
+    const list = (data[selectedLetter] || []).slice().sort((a, b) =>
+      a.term.localeCompare(b.term)
+    );
+    if (!searchTerm.trim()) return list;
+    const q = searchTerm.toLowerCase();
+    return list.filter(
+      (e) =>
+        e.term.toLowerCase().includes(q) ||
+        e.definition.toLowerCase().includes(q)
+    );
+  }, [data, selectedLetter, searchTerm]);
+
+  const addTerm = () => {
+    setMessage('');
+    const term = newTerm.trim();
+    const definition = newDefinition.trim();
+    if (!term || !definition) {
+      setMessage('Please enter both a term and a definition.');
+      return;
+    }
+    // Determine letter from first A–Z character in term
+    const firstLetter = (term.match(/[A-Za-z]/)?.[0] || 'A').toUpperCase();
+    if (!alphabet.includes(firstLetter)) {
+      setMessage('Term must start with an A–Z character.');
+      return;
+    }
+    // Prevent duplicates (case-insensitive) within that letter
+    const exists = (data[firstLetter] || []).some(
+      (e) => e.term.toLowerCase() === term.toLowerCase()
+    );
+    if (exists) {
+      setMessage(`"${term}" already exists under ${firstLetter}.`);
+      return;
+    }
+    const next = { ...data, [firstLetter]: [...(data[firstLetter] || []), { term, definition }] };
+    setData(next);
+    setSelectedLetter(firstLetter);
+    setNewTerm('');
+    setNewDefinition('');
+    setMessage('✅ Term added.');
+    // Clear status after a moment
+    setTimeout(() => setMessage(''), 2000);
+  };
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Government Contracting Glossary</h1>
+      {/* Search + Add Term */}
+      <div className="grid gap-3 md:grid-cols-2 mb-4">
+        <input
+          type="text"
+          placeholder="Search terms or definitions..."
+          className="p-2 border rounded w-full"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
 
-      <input
-        type="text"
-        placeholder="Search terms or definitions..."
-        className="mb-4 p-2 border rounded w-full"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
+        <div className="bg-white text-black border rounded p-2">
+          <div className="text-sm font-semibold mb-2">Add a new term</div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <input
+              type="text"
+              placeholder="Term (e.g., ROM)"
+              value={newTerm}
+              onChange={(e) => setNewTerm(e.target.value)}
+              className="px-2 py-1 border rounded w-full"
+            />
+            <button
+              onClick={addTerm}
+              className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Add Term
+            </button>
+          </div>
+          <textarea
+            placeholder="Definition"
+            value={newDefinition}
+            onChange={(e) => setNewDefinition(e.target.value)}
+            rows={3}
+            className="mt-2 px-2 py-1 border rounded w-full"
+          />
+          {message && (
+            <div className="mt-2 text-sm">
+              {message}
+            </div>
+          )}
+          <div className="mt-1 text-xs text-gray-600">
+            Letter is auto-picked from the term’s first A–Z character.
+          </div>
+        </div>
+      </div>
 
+      {/* Alphabet filter */}
       <div className="flex flex-wrap gap-2 mb-4">
         {alphabet.map((letter) => (
           <button
@@ -136,6 +250,7 @@ const Glossary = () => {
         ))}
       </div>
 
+      {/* Results */}
       <div className="space-y-3">
         {filteredTerms.map((entry) => (
           <div key={entry.term} className="border-b pb-2">
@@ -149,6 +264,4 @@ const Glossary = () => {
       </div>
     </div>
   );
-};
-
-export default Glossary;
+}      
