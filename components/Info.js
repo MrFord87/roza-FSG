@@ -169,7 +169,6 @@ export default function Info() {
 
           <div className="mt-3 text-xs text-gray-600">
             Tip: This MVP stores PDFs in your browser (localStorage). Keep files under ~5 MB each.
-            When we connect a backend (S3/Supabase), we’ll lift these limits and add sharing/search.
           </div>
         </div>
       </section>
