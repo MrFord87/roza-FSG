@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Calendar from "../components/Calendar";
 import Contacts from "../components/Contacts";
 import Glossary from "../components/Glossary";
@@ -6,37 +6,41 @@ import Glossary from "../components/Glossary";
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
 
+  // Load saved tab on first render
+  useEffect(() => {
+    const savedTab = localStorage.getItem("activeTab");
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  // Save tab every time it changes
+  useEffect(() => {
+    localStorage.setItem("activeTab", activeTab);
+  }, [activeTab]);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "home":
         return <div>Welcome to ROZA! Select a tab to get started.</div>;
-
       case "calendar":
         return <Calendar />;
-
       case "contacts":
         return <Contacts />;
-
       case "proposals":
         return <div>📝 Proposal builder coming soon...</div>;
-
       case "contracts":
         return <div>📂 Contract folders and details coming soon...</div>;
-
       case "tasks":
         return (
           <div>✅ Task tracking with color-coded responsibility coming soon...</div>
         );
-
       case "assistant":
         return <div>🤖 AI Proposal Assistant launching soon...</div>;
-
       case "info":
         return <Glossary />;
-
       case "bookmarks":
         return <div>🔖 Bookmark and quick links coming soon...</div>;
-
       default:
         return <div>Welcome to ROZA! Select a tab to get started.</div>;
     }
