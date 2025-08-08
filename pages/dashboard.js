@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 // ⬇️ Adjust paths if needed
 import MyCalendar from '../components/Calendar';
 import Contacts from '../components/Contacts';
-import Glossary from '../components/Glossary';
+import Contracts from '../components/Contracts';
+import Bookmarks from '../components/Bookmarks';
+import Glossary from '../components/Glossary'; // This is your Info tab
 
 const DEFAULT_TAB = 'dashboard';
 
@@ -45,7 +47,11 @@ export default function Dashboard() {
         return <MyCalendar />;
       case 'contacts':
         return <Contacts />;
-      case 'glossary':
+      case 'contracts':
+        return <Contracts />;
+      case 'bookmarks':
+        return <Bookmarks />;
+      case 'info':
         return <Glossary />;
       case 'dashboard':
       default:
@@ -73,7 +79,9 @@ export default function Dashboard() {
           { key: 'dashboard', label: 'Dashboard' },
           { key: 'calendar', label: 'Calendar' },
           { key: 'contacts', label: 'Contacts' },
-          { key: 'glossary', label: 'Glossary' },
+          { key: 'contracts', label: 'Contracts' },
+          { key: 'bookmarks', label: 'Bookmarks' },
+          { key: 'info', label: 'Info' }, // Shows Glossary
         ].map((t) => (
           <button
             key={t.key}
