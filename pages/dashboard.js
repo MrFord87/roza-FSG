@@ -13,7 +13,7 @@ export default function Dashboard() {
       case "calendar":
         return <Calendar />;
       case "contacts":
-        return <Contaacts />;
+        return <Contacts />;
       case "proposals":
         return <div>📝 Proposal builder coming soon...</div>;
       case "contracts":
