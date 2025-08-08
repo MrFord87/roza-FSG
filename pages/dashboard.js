@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Calendar from "../components/Calendar";
 import Glossary from "../components/Glossary";
+import Contacts from "../components/Contacts";
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("home");
@@ -12,7 +13,7 @@ export default function Dashboard() {
       case "calendar":
         return <Calendar />;
       case "contacts":
-        return <div>📇 Contacts management coming soon...</div>;
+        return <Contaacts />;
       case "proposals":
         return <div>📝 Proposal builder coming soon...</div>;
       case "contracts":
