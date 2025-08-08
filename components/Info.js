@@ -1,7 +1,7 @@
+// components/Info.js
 import React, { useEffect, useState } from 'react';
 import Glossary from './Glossary';
 
-// ---- Simple localStorage “DB”
 const KB_KEY = 'rozaKnowledgeBasePDFs'; // [{id,name,size,addedAt,base64}]
 
 const humanSize = (bytes) => {
@@ -19,11 +19,12 @@ const fileToBase64 = (file) =>
   });
 
 export default function Info() {
+  const [section, setSection] = useState(null); // 'glossary' | 'kb' | null
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  // Load on mount
+  // Load KB on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KB_KEY);
@@ -33,7 +34,7 @@ export default function Info() {
     }
   }, []);
 
-  // Persist on change
+  // Persist KB
   useEffect(() => {
     try {
       localStorage.setItem(KB_KEY, JSON.stringify(items));
@@ -45,22 +46,14 @@ export default function Info() {
   const onUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-
     setError('');
     setBusy(true);
     try {
       const newOnes = [];
       for (const f of files) {
-        if (f.type !== 'application/pdf') {
-          setError('Only PDF files are allowed.');
-          continue;
-        }
-        // Guard against massive files (localStorage ~5–10MB total budget)
-        if (f.size > 5 * 1024 * 1024) {
-          setError('Max file size is 5 MB per PDF (for now).');
-          continue;
-        }
-        const base64 = await fileToBase64(f); // data:application/pdf;base64,....
+        if (f.type !== 'application/pdf') { setError('Only PDF files are allowed.'); continue; }
+        if (f.size > 5 * 1024 * 1024) { setError('Max size is 5 MB per PDF (MVP limit).'); continue; }
+        const base64 = await fileToBase64(f);
         newOnes.push({
           id: Date.now() + Math.random().toString(16).slice(2),
           name: f.name,
@@ -70,48 +63,79 @@ export default function Info() {
         });
       }
       if (newOnes.length) setItems(prev => [...newOnes, ...prev]);
-      e.target.value = ''; // reset input
-    } catch (err) {
-      console.error(err);
-      setError('Failed to process file(s).');
+      e.target.value = '';
     } finally {
       setBusy(false);
     }
   };
 
   const onDelete = (id) => setItems(prev => prev.filter(x => x.id !== id));
-
   const onOpen = (item) => {
-    // Open in a new tab using the data URL
     const win = window.open();
-    if (win) {
-      win.document.write(
-        `<iframe src="${item.base64}" title="${item.name}" ` +
-        `style="border:0;position:fixed;left:0;top:0;width:100%;height:100%"></iframe>`
-      );
-    } else {
-      alert('Popup blocked—allow popups for this site to view PDFs.');
-    }
+    if (!win) return alert('Popup blocked—allow popups to view PDFs.');
+    win.document.write(
+      `<iframe src="${item.base64}" title="${item.name}" style="border:0;position:fixed;inset:0;width:100%;height:100%"></iframe>`
+    );
   };
 
-  return (
-    <div className="p-4 space-y-8">
-      {/* Section 1: Government Contracting Glossary */}
-      <section className="bg-white text-black rounded-md border border-gray-300">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+  // Landing chooser UI
+  if (!section) {
+    return (
+      <div className="p-4 grid gap-4 md:grid-cols-2">
+        <button
+          onClick={() => setSection('glossary')}
+          className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow"
+        >
           <h2 className="text-lg font-semibold">Government Contracting Glossary</h2>
-          {/* Optional: jump link */}
-          <a href="#knowledge-base" className="text-blue-600 underline text-sm">Go to Knowledge Base ↓</a>
+          <p className="text-sm text-gray-600 mt-1">Tap to open the full glossary A–Z.</p>
+        </button>
+
+        <button
+          onClick={() => setSection('kb')}
+          className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow"
+        >
+          <h2 className="text-lg font-semibold">Knowledge Base (PDFs)</h2>
+          <p className="text-sm text-gray-600 mt-1">Upload and view FAQ/reference PDFs.</p>
+        </button>
+      </div>
+    );
+  }
+
+  // Glossary section
+  if (section === 'glossary') {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Government Contracting Glossary</h2>
+          <button
+            onClick={() => setSection(null)}
+            className="px-3 py-1 rounded bg-gray-800 text-white"
+          >
+            ← Back
+          </button>
         </div>
-        <div className="p-4">
+        <div className="bg-white text-black rounded-md border border-gray-300 p-4">
           <Glossary />
         </div>
-      </section>
+      </div>
+    );
+  }
 
-      {/* Section 2: Knowledge Base (PDF uploads) */}
-      <section id="knowledge-base" className="bg-white text-black rounded-md border border-gray-300">
+  // KB section
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Knowledge Base (PDFs)</h2>
+        <button
+          onClick={() => setSection(null)}
+          className="px-3 py-1 rounded bg-gray-800 text-white"
+        >
+          ← Back
+        </button>
+      </div>
+
+      <div className="bg-white text-black rounded-md border border-gray-300">
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Knowledge Base (PDFs)</h2>
           <label className="inline-flex items-center gap-2 cursor-pointer">
             <input
               type="file"
@@ -149,18 +173,8 @@ export default function Info() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onOpen(item)}
-                      className="px-2 py-1 text-sm bg-gray-800 text-white rounded"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => onDelete(item.id)}
-                      className="px-2 py-1 text-sm border border-red-500 text-red-600 rounded"
-                    >
-                      Delete
-                    </button>
+                    <button onClick={() => onOpen(item)} className="px-2 py-1 text-sm bg-gray-800 text-white rounded">View</button>
+                    <button onClick={() => onDelete(item.id)} className="px-2 py-1 text-sm border border-red-500 text-red-600 rounded">Delete</button>
                   </div>
                 </li>
               ))}
@@ -169,9 +183,10 @@ export default function Info() {
 
           <div className="mt-3 text-xs text-gray-600">
             Tip: This MVP stores PDFs in your browser (localStorage). Keep files under ~5 MB each.
+            We’ll move to S3/Supabase later for larger files + search.
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
