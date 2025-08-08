@@ -3,7 +3,7 @@ import Calendar from "../components/Calendar";
 import Contacts from "../components/Contacts";
 import Glossary from "../components/Glossary";
 import Info from"../components/Info";
-import Sources from"../components/Sources":
+import Sources from"../components/Sources";
   
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
