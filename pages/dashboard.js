@@ -1,19 +1,19 @@
 // Dashboard.js
 import React, { useEffect, useState } from 'react';
 
-// ⬇️ Adjust paths if needed based on your project structure
+// ⬇️ Adjust paths if needed
 import MyCalendar from '../components/Calendar';
 import Contacts from '../components/Contacts';
 import Glossary from '../components/Glossary';
 
-const DEFAULT_TAB = 'dashboard'; // 'dashboard' | 'calendar' | 'contacts' | 'info'
+const DEFAULT_TAB = 'dashboard';
 
 function DashboardHome() {
   return (
     <div style={{ padding: '1rem' }}>
       <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>Welcome to ROZA</h2>
       <p style={{ opacity: 0.8 }}>
-        
+        Pick a tab above to get started. Your selection will be remembered on refresh.
       </p>
     </div>
   );
@@ -22,7 +22,7 @@ function DashboardHome() {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
 
-  // On mount, restore from URL hash or localStorage
+  // Restore on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const fromHash = window.location.hash ? window.location.hash.replace('#', '') : '';
@@ -31,12 +31,12 @@ export default function Dashboard() {
     setActiveTab(initial);
   }, []);
 
-  // Keep URL hash + localStorage in sync with activeTab
+  // Persist when activeTab changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!activeTab) return;
-    window.location.hash = activeTab;                 // e.g., /app#calendar
-    localStorage.setItem('rozaActiveTab', activeTab); // persist selection
+    window.location.hash = activeTab;
+    localStorage.setItem('rozaActiveTab', activeTab);
   }, [activeTab]);
 
   const renderTab = () => {
@@ -52,13 +52,6 @@ export default function Dashboard() {
         return <DashboardHome />;
     }
   };
-
-  const tabs = [
-    { key: 'dashboard', label: 'Dashboard' },
-    { key: 'calendar',  label: 'Calendar'  },
-    { key: 'contacts',  label: 'Contacts'  },
-    { key: 'info',  label: 'Info'  },
-  ];
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -76,7 +69,12 @@ export default function Dashboard() {
           zIndex: 10,
         }}
       >
-        {tabs.map((t) => (
+        {[
+          { key: 'dashboard', label: 'Dashboard' },
+          { key: 'calendar', label: 'Calendar' },
+          { key: 'contacts', label: 'Contacts' },
+          { key: 'glossary', label: 'Glossary' },
+        ].map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
