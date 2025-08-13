@@ -1,11 +1,11 @@
 // pages/dashboard.js
 import React, { useState } from 'react';
 
-import Calendar from '../components/Calendar';
-import Contacts from '../components/Contacts';
-import Contracts from '../components/Contracts';
-import Info from '../components/Info';
-import Sources from '../components/Sources';
+import Calendar from '../components/calendar';
+import Contacts from '../components/contacts';
+import Contracts from '../components/contracts';
+import Info from '../components/info';
+import Sources from '../components/sources';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -25,7 +25,6 @@ export default function Dashboard() {
     <div className="p-6">
       <h1 className="text-3xl font-black mb-4">ROZA Dashboard</h1>
 
-      {/* Tabs */}
       <div className="flex flex-wrap mb-6">
         <TabButton id="dashboard" label="Dashboard" />
         <TabButton id="calendar" label="Calendar" />
@@ -35,7 +34,6 @@ export default function Dashboard() {
         <TabButton id="contracts" label="Contracts" />
       </div>
 
-      {/* Dashboard blocks only */}
       {activeTab === 'dashboard' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div
