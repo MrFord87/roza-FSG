@@ -1,173 +1,340 @@
-import React, { useState, useEffect } from 'react';
+// components/Info.js
+import React, { useEffect, useState } from 'react';
+import Glossary from './Glossary';
+
+// ---- Helpers for Knowledge Base (PDFs)
+const KB_KEY = 'rozaKnowledgeBasePDFs';
+const humanSize = (bytes) =>
+  bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
+
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result)); // data:application/pdf;base64,....
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
+function toPdfBlob(dataUrlOrBase64) {
+  const hasHeader = /^data:application\/pdf;base64,/i.test(dataUrlOrBase64);
+  const base64 = hasHeader ? dataUrlOrBase64.split(',')[1] : dataUrlOrBase64;
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: 'application/pdf' });
+}
 
 export default function Info() {
-  // ---- Glossary state ----
-  const [terms, setTerms] = useState([]);
-  const [newTerm, setNewTerm] = useState('');
-  const [newDefinition, setNewDefinition] = useState('');
-  const [editIndex, setEditIndex] = useState(null);
-  const [editTerm, setEditTerm] = useState('');
-  const [editDefinition, setEditDefinition] = useState('');
+  const [section, setSection] = useState(null); // null | 'glossary' | 'kb' | 'naics'
 
-  // ---- NAICS Look Up state ----
+  // ---------------- Knowledge Base (PDFs)
+  const [items, setItems] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [kbError, setKbError] = useState('');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(KB_KEY);
+      if (raw) setItems(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(KB_KEY, JSON.stringify(items));
+    } catch {}
+  }, [items]);
+
+  const onUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setKbError('');
+    setBusy(true);
+    try {
+      const newOnes = [];
+      for (const f of files) {
+        if (f.type !== 'application/pdf') {
+          setKbError('Only PDF files allowed.');
+          continue;
+        }
+        if (f.size > 5 * 1024 * 1024) {
+          setKbError('Max 5 MB per PDF (MVP limit).');
+          continue;
+        }
+        const dataUrl = await fileToDataUrl(f);
+        newOnes.push({
+          id: Date.now() + Math.random().toString(16).slice(2),
+          name: f.name,
+          size: f.size,
+          addedAt: new Date().toISOString(),
+          base64: dataUrl, // store as data URL
+        });
+      }
+      if (newOnes.length) setItems((prev) => [...newOnes, ...prev]);
+      e.target.value = '';
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onDelete = (id) => setItems((prev) => prev.filter((x) => x.id !== id));
+
+  // ✅ Bullet-proof "open in new tab" that works with popup blockers:
+  // pre-open a blank tab synchronously, then load the PDF iframe into it.
+  const onOpen = (item) => {
+    try {
+      // 1) Open blank tab immediately (allowed by blockers since it's sync with click)
+      const win = window.open('', '_blank', 'noopener');
+      if (!win) {
+        alert('Popup blocked — please allow popups for this site.');
+        return;
+      }
+      // Small placeholder while we build the blob
+      win.document.write(`
+        <!doctype html><html><head>
+          <meta charset="utf-8" />
+          <title>Opening ${item.name}…</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <style>
+            html,body{height:100%;margin:0;display:grid;place-items:center;background:#111;color:#fff;font:16px system-ui,sans-serif}
+            .box{opacity:.85}
+          </style>
+        </head><body><div class="box">Loading PDF…</div></body></html>
+      `);
+      win.document.close();
+
+      // 2) Turn stored data URL/base64 into a real PDF blob
+      const pdfBlob = toPdfBlob(item.base64);
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      // 3) Replace the blank tab contents with a fullscreen iframe of the PDF
+      win.document.open();
+      win.document.write(`
+        <!doctype html><html><head>
+          <meta charset="utf-8" />
+          <title>${item.name}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <style>html,body{height:100%;margin:0} iframe{border:0;width:100%;height:100%}</style>
+        </head><body>
+          <iframe src="${pdfUrl}" title="${item.name}"></iframe>
+          <script>
+            window.addEventListener('beforeunload', ()=>{ try{ URL.revokeObjectURL('${pdfUrl}'); }catch(e){} });
+          </script>
+        </body></html>
+      `);
+      win.document.close();
+    } catch (e) {
+      console.error('PDF open error:', e);
+      alert('Could not open PDF.');
+    }
+  };
+
+  // ---------------- NAICS Look Up (keyword only; /api/naics uses local dataset)
   const [q, setQ] = useState('');
   const [naicsLoading, setNaicsLoading] = useState(false);
   const [naicsError, setNaicsError] = useState('');
   const [naicsResults, setNaicsResults] = useState([]);
 
-  // ---- Load glossary from localStorage
-  useEffect(() => {
-    const savedTerms = JSON.parse(localStorage.getItem('glossaryTerms')) || [];
-    setTerms(savedTerms);
-  }, []);
-
-  // ---- Save glossary to localStorage
-  useEffect(() => {
-    localStorage.setItem('glossaryTerms', JSON.stringify(terms));
-  }, [terms]);
-
-  // ---- Add term
-  const handleAddTerm = () => {
-    if (!newTerm.trim() || !newDefinition.trim()) return;
-    const updatedTerms = [...terms, { term: newTerm, definition: newDefinition }];
-    setTerms(updatedTerms);
-    setNewTerm('');
-    setNewDefinition('');
-  };
-
-  // ---- Edit term
-  const handleEditTerm = (index) => {
-    setEditIndex(index);
-    setEditTerm(terms[index].term);
-    setEditDefinition(terms[index].definition);
-  };
-
-  const handleSaveEdit = () => {
-    if (!editTerm.trim() || !editDefinition.trim()) return;
-    const updatedTerms = [...terms];
-    updatedTerms[editIndex] = { term: editTerm, definition: editDefinition };
-    setTerms(updatedTerms);
-    setEditIndex(null);
-    setEditTerm('');
-    setEditDefinition('');
-  };
-
-  // ---- Delete term
-  const handleDeleteTerm = (index) => {
-    const updatedTerms = terms.filter((_, i) => i !== index);
-    setTerms(updatedTerms);
-  };
-
-  // ---- NAICS Lookup
-  const handleSearch = async () => {
-    if (!q.trim()) return;
+  const handleNaicsSearch = async () => {
+    const term = q.trim();
+    if (!term) return;
     setNaicsLoading(true);
     setNaicsError('');
+    setNaicsResults([]);
     try {
-      const res = await fetch(`/api/naics?q=${encodeURIComponent(q)}`);
-      if (!res.ok) throw new Error('Search failed');
+      const res = await fetch(`/api/naics?q=${encodeURIComponent(term)}`);
       const data = await res.json();
-      setNaicsResults(data.results || []);
-    } catch (error) {
-      setNaicsError(error.message);
+      if (!res.ok || !data?.ok) {
+        setNaicsError(data?.error || 'Lookup failed.');
+        return;
+      }
+      setNaicsResults(Array.isArray(data.results) ? data.results : []);
+    } catch {
+      setNaicsError('Network error.');
     } finally {
       setNaicsLoading(false);
     }
   };
 
-  return (
-    <div className="p-6 space-y-8">
-      {/* Glossary */}
-      <div className="p-4 border rounded-lg shadow-md bg-white">
-        <h2 className="text-xl font-bold mb-4">Government Contracting Glossary</h2>
-        <div className="mb-4 flex space-x-2">
-          <input
-            type="text"
-            placeholder="Term"
-            className="border p-2 flex-1"
-            value={newTerm}
-            onChange={(e) => setNewTerm(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Definition"
-            className="border p-2 flex-1"
-            value={newDefinition}
-            onChange={(e) => setNewDefinition(e.target.value)}
-          />
-          <button onClick={handleAddTerm} className="bg-blue-600 text-white px-4 py-2 rounded">
-            Add
+  // ---------------- Landing (three cards)
+  if (section === null) {
+    return (
+      <div className="p-4 grid gap-4 md:grid-cols-3">
+        <button
+          onClick={() => setSection('glossary')}
+          className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow"
+        >
+          <h2 className="text-lg font-semibold">Government Contracting Glossary</h2>
+          <p className="text-sm text-gray-600 mt-1">Open the A–Z glossary (editable).</p>
+        </button>
+
+        <button
+          onClick={() => setSection('kb')}
+          className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow"
+        >
+          <h2 className="text-lg font-semibold">Knowledge Base (PDFs)</h2>
+          <p className="text-sm text-gray-600 mt-1">Upload and view FAQ/reference PDFs.</p>
+        </button>
+
+        <button
+          onClick={() => setSection('naics')}
+          className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow"
+        >
+          <h2 className="text-lg font-semibold">NAICS Look Up</h2>
+          <p className="text-sm text-gray-600 mt-1">Search NAICS codes by keyword or code.</p>
+        </button>
+      </div>
+    );
+  }
+
+  // ---------------- Glossary section
+  if (section === 'glossary') {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Government Contracting Glossary</h2>
+          <button onClick={() => setSection(null)} className="px-3 py-1 rounded bg-gray-800 text-white">
+            ← Back
           </button>
         </div>
-        <ul>
-          {terms.map((item, index) => (
-            <li key={index} className="flex justify-between items-center mb-2">
-              {editIndex === index ? (
-                <>
-                  <input
-                    type="text"
-                    value={editTerm}
-                    onChange={(e) => setEditTerm(e.target.value)}
-                    className="border p-1 flex-1 mr-2"
-                  />
-                  <input
-                    type="text"
-                    value={editDefinition}
-                    onChange={(e) => setEditDefinition(e.target.value)}
-                    className="border p-1 flex-1 mr-2"
-                  />
-                  <button onClick={handleSaveEdit} className="bg-green-500 text-white px-2 py-1 rounded">Save</button>
-                </>
-              ) : (
-                <>
-                  <span><strong>{item.term}</strong>: {item.definition}</span>
-                  <div>
-                    <button onClick={() => handleEditTerm(index)} className="text-blue-500 mr-2">Edit</button>
-                    <button onClick={() => handleDeleteTerm(index)} className="text-red-500">Delete</button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+        <div className="bg-white text-black rounded-md border border-gray-300 p-4">
+          <Glossary />
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------- Knowledge Base section
+  if (section === 'kb') {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Knowledge Base (PDFs)</h2>
+          <button onClick={() => setSection(null)} className="px-3 py-1 rounded bg-gray-800 text-white">
+            ← Back
+          </button>
+        </div>
+
+        <div className="bg-white text-black rounded-md border border-gray-300">
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <label className="inline-flex items-center gap-2 cursor-pointer">
+              <input
+                type="file"
+                accept="application/pdf"
+                multiple
+                onChange={onUpload}
+                disabled={busy}
+                className="hidden"
+                id="kb-uploader"
+              />
+              <span
+                onClick={() => document.getElementById('kb-uploader')?.click()}
+                className={`px-3 py-1 rounded ${busy ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
+              >
+                {busy ? 'Uploading…' : 'Upload PDF(s)'}
+              </span>
+            </label>
+          </div>
+
+          <div className="p-4">
+            {kbError && <div className="mb-3 text-red-600 text-sm">{kbError}</div>}
+
+            {items.length === 0 ? (
+              <div className="text-gray-600 text-sm">
+                No PDFs yet. Click <b>Upload PDF(s)</b> to add FAQs or reference docs.
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {items.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center justify-between border border-gray-200 rounded-md px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{item.name}</div>
+                      <div className="text-xs text-gray-600">
+                        {humanSize(item.size)} • Added {new Date(item.addedAt).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onOpen(item)}
+                        className="px-2 py-1 text-sm bg-gray-800 text-white rounded"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => onDelete(item.id)}
+                        className="px-2 py-1 text-sm border border-red-500 text-red-600 rounded"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="mt-3 text-xs text-gray-600">
+              Tip: PDFs are stored in your browser (localStorage). We’ll move to cloud storage later.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------- NAICS Look Up section
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">NAICS Look Up</h2>
+        <button onClick={() => setSection(null)} className="px-3 py-1 rounded bg-gray-800 text-white">
+          ← Back
+        </button>
       </div>
 
-      {/* NAICS Lookup */}
-      <div className="p-4 border rounded-lg shadow-md bg-white">
-        <h2 className="text-xl font-bold mb-4">NAICS Look Up</h2>
-        <div className="mb-4 flex space-x-2">
+      <div className="bg-white text-black rounded-md border border-gray-300 p-4">
+        <div className="grid gap-3 md:grid-cols-3">
           <input
-            type="text"
-            placeholder="Enter keyword..."
-            className="border p-2 flex-1"
+            className="px-3 py-2 border border-gray-300 rounded md:col-span-2"
+            placeholder="Enter keyword or code (e.g., consulting, construction, 541512)"
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleNaicsSearch()}
           />
-          <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2 rounded">
-            Search
+          <button
+            onClick={handleNaicsSearch}
+            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            disabled={naicsLoading || !q.trim()}
+          >
+            {naicsLoading ? 'Searching…' : 'Search'}
           </button>
         </div>
-        {naicsLoading && <p>Loading...</p>}
-        {naicsError && <p className="text-red-500">{naicsError}</p>}
-        <ul>
-          {naicsResults.map((result, idx) => (
-            <li key={idx} className="mb-2">
-              <strong>{result.code}</strong>: {result.title}
-            </li>
-          ))}
-        </ul>
-      </div>
 
-      {/* Reference PDFs */}
-      <div className="p-4 border rounded-lg shadow-md bg-white">
-        <h2 className="text-xl font-bold mb-4">Reference PDFs</h2>
-        <ul className="list-disc pl-5">
-          <li>
-            <a href="/pdfs/Example1.pdf" target="_blank" rel="noopener noreferrer" className="text-blue-500">
-              Example 1
-            </a>
-          </li>
-        </ul>
+        {naicsError && <div className="mt-3 text-sm text-red-600">{naicsError}</div>}
+
+        <div className="mt-4 grid gap-3">
+          {Array.isArray(naicsResults) && naicsResults.length > 0 ? (
+            naicsResults.map((r) => (
+              <div key={`${r.code}-${r.title}`} className="border border-gray-200 rounded p-3">
+                <div className="font-semibold">{r.code} — {r.title}</div>
+                {r.index && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    Index terms: {Array.isArray(r.index) ? r.index.join(', ') : r.index}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            !naicsLoading &&
+            !naicsError && (
+              <div className="text-sm text-gray-600">
+                No results yet. Try “IT”, “construction”, or code “541512”.
+              </div>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
