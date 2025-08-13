@@ -115,34 +115,25 @@ export default function Info() {
   const handleNaicsSearch = async () => {
     const term = q.trim();
     if (!term) return;
-    
+
     setNaicsLoading(true);
     setNaicsError('');
     setNaicsResults([]);
-    
-    const handleNaicsSearch = async () => {
-  const term = q.trim();
-  if (!term) return;
 
-  setNaicsLoading(true);
-  setNaicsError('');
-  setNaicsResults([]);
-
-  try {
-    // NOTE: leading slash is important
-    const r = await fetch(`/api/naics?q=${encodeURIComponent(term)}`);
-    // Avoid throw on .json() if server sent non-JSON
-    const json = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      throw new Error(json?.error || `HTTP ${r.status}`);
+    try {
+      // NOTE: leading slash is important
+      const r = await fetch(`/api/naics?q=${encodeURIComponent(term)}`);
+      const json = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        throw new Error(json?.error || `HTTP ${r.status}`);
+      }
+      setNaicsResults(Array.isArray(json.results) ? json.results : []);
+    } catch (err) {
+      setNaicsError(err?.message || 'Lookup failed');
+    } finally {
+      setNaicsLoading(false);
     }
-    setNaicsResults(Array.isArray(json.results) ? json.results : []);
-  } catch (err) {
-    setNaicsError(err?.message || 'Lookup failed');
-  } finally {
-    setNaicsLoading(false);
-  }
-};
+  };
 
   // ---------- Landing cards
   if (section === null) {
@@ -285,20 +276,25 @@ export default function Info() {
         </div>
 
         {naicsError && <div className="mt-3 text-sm text-red-600">{naicsError}</div>}
-<div className="mt-4 grid gap-3">
-  {Array.isArray(naicsResults) && naicsResults.length > 0 ? (
-    naicsResults.map((r) => (
-      <div key={`${r.code}-${r.title}`} className="border border-gray-200 rounded p-3">
-        <div className="font-semibold">{r.code} — {r.title}</div>
-        {(r.desc || r.index) && (
-          <div className="text-xs text-gray-600 mt-1">
-            {r.desc || (Array.isArray(r.index) ? r.index.join(', ') : r.index)}
-          </div>
-        )}
+        <div className="mt-4 grid gap-3">
+          {Array.isArray(naicsResults) && naicsResults.length > 0 ? (
+            naicsResults.map((r) => (
+              <div key={`${r.code}-${r.title}`} className="border border-gray-200 rounded p-3">
+                <div className="font-semibold">{r.code} — {r.title}</div>
+                {(r.desc || r.index) && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    {r.desc || (Array.isArray(r.index) ? r.index.join(', ') : r.index)}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : !naicsLoading && !naicsError ? (
+            <div className="text-sm text-gray-600">
+              No results yet. Try “IT”, “construction”, or code “541512”.
+            </div>
+          ) : null}
+        </div>
       </div>
-    ))
-  ) : !naicsLoading && !naicsError ? (
-    <div className="text-sm text-gray-600">
-      No results yet. Try “IT”, “construction”, or code “541512”.
     </div>
-  
+  );
+}
