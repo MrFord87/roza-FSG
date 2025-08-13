@@ -4,8 +4,6 @@ import Contracts from '../components/Contracts';
 import Contacts from '../components/Contacts';
 import Info from '../components/Info';
 import Sources from '../components/Sources';
-import Bookmarks from '../components/Bookmarks';
-import Proposals from '../components/Proposals';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(() => {
