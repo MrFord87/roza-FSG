@@ -1,298 +1,167 @@
-// components/Info.js
-import React, { useEffect, useState, useCallback } from 'react';
-import Glossary from './Glossary';
+import React, { useState } from 'react';
 
-// ---------- Helpers (Knowledge Base)
-const KB_KEY = 'rozaKnowledgeBasePDFs';
-const humanSize = (bytes) =>
-  bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
-const fileToDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result)); // "data:application/pdf;base64,...."
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
-// Accepts either full data URL or raw base64 and returns a real PDF Blob
-function toPdfBlob(data) {
-  const hasHeader = /^data:application\/pdf;base64,/i.test(data);
-  const base64 = hasHeader ? data.split(',')[1] : data;
-  const bin = atob(base64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: 'application/pdf' });
+// Convert base64 to PDF Blob
+function toPdfBlob(base64) {
+  const byteChars = atob(base64);
+  const byteNumbers = new Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNumbers[i] = byteChars.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  return new Blob([byteArray], { type: 'application/pdf' });
 }
 
 export default function Info() {
-  const [section, setSection] = useState(null); // null | 'glossary' | 'kb' | 'naics'
+  // Glossary state
+  const [glossary, setGlossary] = useState({
+    ADA: 'Americans with Disabilities Act – Prohibits discrimination against individuals with disabilities.',
+    ADR: 'Alternative Dispute Resolution – Resolving disputes outside of traditional forums.',
+    AFP: 'Annual Funding Profile – Projection of funds for a government program.'
+  });
 
-  // ---------- Knowledge Base (PDFs)
-  const [items, setItems] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [kbError, setKbError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // PDF Modal viewer state
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState('');
-  const [pdfTitle, setPdfTitle] = useState('');
-
-  // Load/save KB list
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KB_KEY);
-      if (raw) setItems(JSON.parse(raw));
-    } catch {}
-  }, []);
-  useEffect(() => {
-    try {
-      localStorage.setItem(KB_KEY, JSON.stringify(items));
-    } catch {}
-  }, [items]);
-
-  const onUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    setKbError('');
-    setBusy(true);
-    try {
-      const newOnes = [];
-      for (const f of files) {
-        if (f.type !== 'application/pdf') { setKbError('Only PDF files allowed.'); continue; }
-        if (f.size > 5 * 1024 * 1024) { setKbError('Max 5 MB per PDF (MVP limit).'); continue; }
-        const dataUrl = await fileToDataUrl(f);
-        newOnes.push({
-          id: Date.now() + Math.random().toString(16).slice(2),
-          name: f.name,
-          size: f.size,
-          addedAt: new Date().toISOString(),
-          base64: dataUrl, // store full data URL for portability
-        });
-      }
-      if (newOnes.length) setItems((prev) => [...newOnes, ...prev]);
-      e.target.value = '';
-    } finally {
-      setBusy(false);
+  // Knowledge Base PDFs
+  const [pdfList, setPdfList] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('rozaKnowledgeBase');
+      return saved ? JSON.parse(saved) : [];
     }
+    return [];
+  });
+
+  const savePdfList = (list) => {
+    setPdfList(list);
+    localStorage.setItem('rozaKnowledgeBase', JSON.stringify(list));
   };
 
-  const onDelete = (id) => setItems((prev) => prev.filter((x) => x.id !== id));
+  const onUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const base64 = evt.target.result.split(',')[1];
+      const newItem = {
+        id: crypto.randomUUID(),
+        name: file.name,
+        base64,
+        size: file.size,
+        added: new Date().toLocaleString()
+      };
+      const updated = [...pdfList, newItem];
+      savePdfList(updated);
+    };
+    reader.readAsDataURL(file);
+  };
 
-  // Open PDF inside a modal (no new tab)
+  const onDelete = (id) => {
+    const updated = pdfList.filter((item) => item.id !== id);
+    savePdfList(updated);
+  };
+
   const onOpen = (item) => {
     try {
-      const blob = toPdfBlob(item.base64);
-      const url = URL.createObjectURL(blob);
-      setPdfTitle(item.name);
-      setPdfBlobUrl(url);
-      setPdfModalOpen(true);
+      // 1) Turn the stored base64 into a real PDF Blob
+      const pdfBlob = toPdfBlob(item.base64);
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      // 2) Build a small HTML page that embeds the PDF fullscreen
+      const html = `
+        <!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <title>${item.name}</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <style>html,body{height:100%;margin:0} iframe{border:0;width:100%;height:100%;}</style>
+          </head>
+          <body>
+            <iframe src="${pdfUrl}" title="${item.name}"></iframe>
+            <script>
+              // Revoke blob URL when closing the tab
+              window.addEventListener('beforeunload', function () {
+                try { URL.revokeObjectURL('${pdfUrl}'); } catch (e) {}
+              });
+            </script>
+          </body>
+        </html>
+      `;
+
+      // 3) Create a Blob URL for the HTML viewer and open it directly
+      const htmlBlob = new Blob([html], { type: 'text/html' });
+      const viewerUrl = URL.createObjectURL(htmlBlob);
+      window.open(viewerUrl, '_blank'); // opens the viewer page directly
     } catch (e) {
       console.error('PDF open error:', e);
       alert('Could not open PDF.');
     }
   };
 
-  const closePdfModal = useCallback(() => {
-    setPdfModalOpen(false);
-    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
-    setPdfBlobUrl('');
-    setPdfTitle('');
-  }, [pdfBlobUrl]);
+  // Filtered glossary
+  const filteredGlossary = Object.keys(glossary)
+    .filter((key) =>
+      key.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      glossary[key].toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .reduce((obj, key) => {
+      obj[key] = glossary[key];
+      return obj;
+    }, {});
 
-  // Close on ESC
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') closePdfModal(); };
-    if (pdfModalOpen) window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [pdfModalOpen, closePdfModal]);
-
-  // ---------- NAICS Look Up (keyword only; /api/naics uses local dataset)
-  const [q, setQ] = useState('');
-  const [naicsLoading, setNaicsLoading] = useState(false);
-  const [naicsError, setNaicsError] = useState('');
-  const [naicsResults, setNaicsResults] = useState([]);
-
-  const handleNaicsSearch = async () => {
-    const term = q.trim();
-    if (!term) return;
-    setNaicsLoading(true);
-    setNaicsError('');
-    setNaicsResults([]);
-    try {
-      const res = await fetch(`/api/naics?q=${encodeURIComponent(term)}`);
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        setNaicsError(data?.error || 'Lookup failed.');
-        return;
-      }
-      setNaicsResults(Array.isArray(data.results) ? data.results : []);
-    } catch {
-      setNaicsError('Network error.');
-    } finally {
-      setNaicsLoading(false);
-    }
-  };
-
-  // ---------- Landing cards
-  if (section === null) {
-    return (
-      <div className="p-4 grid gap-4 md:grid-cols-3">
-        <button onClick={() => setSection('glossary')} className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow">
-          <h2 className="text-lg font-semibold">Government Contracting Glossary</h2>
-          <p className="text-sm text-gray-600 mt-1">Open the A–Z glossary (editable).</p>
-        </button>
-
-        <button onClick={() => setSection('kb')} className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow">
-          <h2 className="text-lg font-semibold">Knowledge Base (PDFs)</h2>
-          <p className="text-sm text-gray-600 mt-1">Upload and view FAQ/reference PDFs.</p>
-        </button>
-
-        <button onClick={() => setSection('naics')} className="text-left bg-white text-black border border-gray-300 rounded-lg p-4 hover:shadow">
-          <h2 className="text-lg font-semibold">NAICS Look Up</h2>
-          <p className="text-sm text-gray-600 mt-1">Search NAICS codes by keyword or code.</p>
-        </button>
-      </div>
-    );
-  }
-
-  // ---------- Glossary section
-  if (section === 'glossary') {
-    return (
-      <div className="p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Government Contracting Glossary</h2>
-          <button onClick={() => setSection(null)} className="px-3 py-1 rounded bg-gray-800 text-white">← Back</button>
-        </div>
-        <div className="bg-white text-black rounded-md border border-gray-300 p-4">
-          <Glossary />
-        </div>
-      </div>
-    );
-  }
-
-  // ---------- Knowledge Base section
-  if (section === 'kb') {
-    return (
-      <>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Knowledge Base (PDFs)</h2>
-            <button onClick={() => setSection(null)} className="px-3 py-1 rounded bg-gray-800 text-white">← Back</button>
-          </div>
-
-          <div className="bg-white text-black rounded-md border border-gray-300">
-            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input type="file" accept="application/pdf" multiple onChange={onUpload} disabled={busy} className="hidden" id="kb-uploader" />
-                <span onClick={() => document.getElementById('kb-uploader')?.click()} className={`px-3 py-1 rounded ${busy ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white`}>
-                  {busy ? 'Uploading…' : 'Upload PDF(s)'}
-                </span>
-              </label>
-            </div>
-
-            <div className="p-4">
-              {kbError && <div className="mb-3 text-red-600 text-sm">{kbError}</div>}
-
-              {items.length === 0 ? (
-                <div className="text-gray-600 text-sm">No PDFs yet. Click <b>Upload PDF(s)</b> to add FAQs or reference docs.</div>
-              ) : (
-                <ul className="space-y-2">
-                  {items.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between border border-gray-200 rounded-md px-3 py-2">
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{item.name}</div>
-                        <div className="text-xs text-gray-600">
-                          {humanSize(item.size)} • Added {new Date(item.addedAt || item.added || Date.now()).toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => onOpen(item)} className="px-2 py-1 text-sm bg-gray-800 text-white rounded">View</button>
-                        <button onClick={() => onDelete(item.id)} className="px-2 py-1 text-sm border border-red-500 text-red-600 rounded">Delete</button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="mt-3 text-xs text-gray-600">
-                Tip: PDFs are stored in your browser (localStorage) for this MVP. We’ll move to cloud storage later.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* PDF Modal */}
-        {pdfModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-            <div className="relative bg-white rounded-lg w-[95vw] h-[90vh] shadow-2xl overflow-hidden">
-              <button
-                onClick={closePdfModal}
-                className="absolute top-2 right-2 px-3 py-1 rounded bg-gray-900 text-white"
-                aria-label="Close PDF"
-              >
-                Close
-              </button>
-              <div className="h-full w-full">
-                {/* Use iframe to render the PDF blob */}
-                <iframe
-                  title={pdfTitle || 'PDF'}
-                  src={pdfBlobUrl}
-                  className="w-full h-full"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  // ---------- NAICS Look Up section
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">NAICS Look Up</h2>
-        <button onClick={() => setSection(null)} className="px-3 py-1 rounded bg-gray-800 text-white">← Back</button>
-      </div>
-
-      <div className="bg-white text-black rounded-md border border-gray-300 p-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <input
-            className="px-3 py-2 border border-gray-300 rounded md:col-span-2"
-            placeholder="Enter keyword or code (e.g., consulting, construction, 541512)"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleNaicsSearch()}
-          />
-          <button
-            onClick={handleNaicsSearch}
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-            disabled={naicsLoading || !q.trim()}
-          >
-            {naicsLoading ? 'Searching…' : 'Search'}
-          </button>
+    <div className="p-4 space-y-6">
+      {/* Government Contracting Glossary */}
+      <section>
+        <h2 className="text-2xl font-bold mb-2">Government Contracting Glossary</h2>
+        <input
+          type="text"
+          placeholder="Search terms or definitions..."
+          className="border p-2 w-full mb-4 text-black"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <div>
+          {Object.keys(filteredGlossary).map((term) => (
+            <div key={term} className="mb-2">
+              <strong>{term}</strong>
+              <div>{filteredGlossary[term]}</div>
+            </div>
+          ))}
         </div>
+      </section>
 
-        {naicsError && <div className="mt-3 text-sm text-red-600">{naicsError}</div>}
-
-        <div className="mt-4 grid gap-3">
-          {Array.isArray(naicsResults) && naicsResults.length > 0 ? (
-            naicsResults.map((r) => (
-              <div key={`${r.code}-${r.title}`} className="border border-gray-200 rounded p-3">
-                <div className="font-semibold">{r.code} — {r.title}</div>
-                {r.index && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    Index terms: {Array.isArray(r.index) ? r.index.join(', ') : r.index}
-                  </div>
-                )}
+      {/* Knowledge Base */}
+      <section>
+        <h2 className="text-2xl font-bold mb-2">Knowledge Base (PDFs)</h2>
+        <input type="file" accept="application/pdf" onChange={onUpload} />
+        <ul className="mt-4 space-y-2">
+          {pdfList.map((item) => (
+            <li key={item.id} className="border p-2 rounded">
+              <div className="font-semibold">{item.name}</div>
+              <div className="text-sm text-gray-400">
+                {(item.size / 1024).toFixed(1)} KB • Added {item.added}
               </div>
-            ))
-          ) : (
-            !naicsLoading &&
-            !naicsError && <div className="text-sm text-gray-600">No results yet. Try “IT”, “construction”, or code “541512”.</div>
-          )}
-        </div>
-      </div>
+              <div className="space-x-2 mt-2">
+                <button
+                  className="bg-blue-600 text-white px-3 py-1 rounded"
+                  onClick={() => onOpen(item)}
+                >
+                  View
+                </button>
+                <button
+                  className="bg-red-600 text-white px-3 py-1 rounded"
+                  onClick={() => onDelete(item.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p className="text-sm text-gray-500 mt-2">
+          Tip: This MVP stores PDFs in your browser (localStorage). Keep files under ~5 MB each.
+        </p>
+      </section>
     </div>
   );
 }
