@@ -301,6 +301,4 @@ export default function Info() {
     <div className="text-sm text-gray-600">
       No results yet. Try “IT”, “construction”, or code “541512”.
     </div>
-  ) : null}
-</div>
-        
+  
