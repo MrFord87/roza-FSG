@@ -1,202 +1,205 @@
-// components/Info.js
-import React, { useEffect, useState } from 'react';
+// components/info.js
+import React, { useEffect, useMemo, useState } from 'react';
+
+// --- tiny helpers for localStorage
+const load = (k, d) => {
+  if (typeof window === 'undefined') return d;
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; }
+};
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 export default function Info() {
-  // --- Glossary (minimal starter; extend as needed)
-  const [glossary, setGlossary] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('roza_glossary') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  // Glossary
+  const [glossary, setGlossary] = useState(() => load('roza_glossary', {
+    A: [{ term: 'ADA', definition: 'Americans with Disabilities Act — Prohibits discrimination against individuals with disabilities.' }],
+    R: [{ term: 'RFP', definition: 'Request for Proposal — Solicitation asking for detailed, evaluated proposals.' }],
+    S: [{ term: 'SOW', definition: 'Statement of Work — Describes detailed scope, objectives, deliverables.' }],
+  }));
   const [term, setTerm] = useState('');
   const [defn, setDefn] = useState('');
+  const alphabet = useMemo(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), []);
 
-  useEffect(() => {
-    localStorage.setItem('roza_glossary', JSON.stringify(glossary));
-  }, [glossary]);
+  useEffect(() => save('roza_glossary', glossary), [glossary]);
 
   const addTerm = () => {
     if (!term.trim() || !defn.trim()) return;
-    setGlossary([
-      ...glossary,
-      { id: crypto.randomUUID(), term: term.trim(), definition: defn.trim() },
-    ]);
-    setTerm('');
-    setDefn('');
+    const letter = term.trim()[0].toUpperCase();
+    setGlossary(prev => {
+      const next = { ...prev };
+      next[letter] = next[letter] || [];
+      next[letter] = [...next[letter], { term: term.trim(), definition: defn.trim() }];
+      return next;
+    });
+    setTerm(''); setDefn('');
   };
 
-  const delTerm = (id) => setGlossary(glossary.filter((g) => g.id !== id));
+  const deleteTerm = (letter, t) => {
+    setGlossary(prev => {
+      const next = { ...prev };
+      next[letter] = (next[letter] || []).filter(x => x.term !== t);
+      return next;
+    });
+  };
 
-  // --- Knowledge Base PDFs (store as data URLs for MVP)
-  const [pdfs, setPdfs] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('roza_pdfs') || '[]');
-    } catch {
-      return [];
-    }
-  });
+  // PDFs (Knowledge Base)
+  const [pdfs, setPdfs] = useState(() => load('roza_pdfs', []));
+  useEffect(() => save('roza_pdfs', pdfs), [pdfs]);
 
-  useEffect(() => {
-    localStorage.setItem('roza_pdfs', JSON.stringify(pdfs));
-  }, [pdfs]);
-
-  const onPDF = async (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  const onUploadPdf = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      setPdfs([
-        ...pdfs,
-        { id: crypto.randomUUID(), name: f.name, dataUrl: reader.result },
+      setPdfs(prev => [
+        ...prev,
+        { id: Date.now(), name: file.name, dataUrl: reader.result, ts: new Date().toISOString() }
       ]);
     };
-    reader.readAsDataURL(f);
+    reader.readAsDataURL(file);
     e.target.value = '';
   };
 
-  const delPDF = (id) => setPdfs(pdfs.filter((p) => p.id !== id));
+  const removePdf = (id) => setPdfs(prev => prev.filter(p => p.id !== id));
 
-  // --- NAICS lookup (client → /api/naics?query=...)
+  // NAICS lookup (keyword only)
   const [q, setQ] = useState('');
-  const [results, setResults] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
+  const [naicsLoading, setNaicsLoading] = useState(false);
+  const [naicsError, setNaicsError] = useState('');
+  const [naicsResults, setNaicsResults] = useState([]);
 
-  const searchNaics = async () => {
+  const searchNaics = async (e) => {
+    e.preventDefault();
+    setNaicsError('');
+    setNaicsResults([]);
     if (!q.trim()) return;
-    setBusy(true);
-    setErr('');
     try {
-      const r = await fetch(`/api/naics?query=${encodeURIComponent(q.trim())}`);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data = await r.json();
-      setResults(Array.isArray(data?.items) ? data.items : []);
-    } catch (e) {
-      setErr('Search failed. Try another term.');
-      setResults([]);
+      setNaicsLoading(true);
+      const resp = await fetch(`/api/naics?q=${encodeURIComponent(q.trim())}`);
+      if (!resp.ok) throw new Error('Lookup failed');
+      const data = await resp.json();
+      setNaicsResults(data?.results || []);
+    } catch (err) {
+      setNaicsError('Lookup failed. Try another keyword.');
     } finally {
-      setBusy(false);
+      setNaicsLoading(false);
     }
   };
 
-  const Block = ({ title, children }) => (
-    <div className="p-5 border-2 border-black rounded-xl mb-6 bg-white">
-      <h2 className="text-2xl font-extrabold mb-4">{title}</h2>
-      {children}
-    </div>
-  );
-
+  // --- UI blocks
   return (
-    <div className="max-w-4xl">
-      {/* Glossary */}
-      <Block title="Government Contracting Glossary">
-        <div className="flex gap-2 mb-3">
+    <div className="space-y-8">
+      {/* Block: Glossary */}
+      <section className="border-2 border-black rounded-xl p-6">
+        <h2 className="text-2xl font-bold mb-4">Government Contracting Glossary</h2>
+
+        <div className="flex gap-2 mb-4">
           <input
-            className="border rounded px-2 py-1 flex-1"
+            className="border px-3 py-2 rounded w-48"
             placeholder="Term"
             value={term}
             onChange={(e) => setTerm(e.target.value)}
           />
           <input
-            className="border rounded px-2 py-1 flex-[2]"
+            className="border px-3 py-2 rounded flex-1"
             placeholder="Definition"
             value={defn}
             onChange={(e) => setDefn(e.target.value)}
           />
-          <button
-            className="px-3 py-1 border rounded bg-black text-white"
-            onClick={addTerm}
-          >
+          <button onClick={addTerm} className="px-4 py-2 border rounded bg-black text-white">
             Add
           </button>
         </div>
 
-        <ul className="space-y-2">
-          {glossary.map((g) => (
-            <li
-              key={g.id}
-              className="border rounded px-3 py-2 flex items-start justify-between"
-            >
-              <div>
-                <div className="font-semibold">{g.term}</div>
-                <div className="text-sm text-gray-700">{g.definition}</div>
-              </div>
-              <button
-                className="text-sm px-2 py-1 border rounded border-red-500 text-red-600"
-                onClick={() => delTerm(g.id)}
-              >
-                Delete
-              </button>
-            </li>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {alphabet.map((L) => (
+            <div key={L} className="border rounded p-3">
+              <h3 className="font-semibold mb-2">{L}</h3>
+              {(glossary[L] || []).length === 0 ? (
+                <div className="text-gray-500 text-sm">No terms yet.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {(glossary[L] || []).map((item) => (
+                    <li key={item.term} className="flex justify-between gap-3">
+                      <div>
+                        <span className="font-semibold">{item.term}</span>{' '}
+                        <span className="text-gray-700">— {item.definition}</span>
+                      </div>
+                      <button
+                        className="text-red-600"
+                        onClick={() => deleteTerm(L, item.term)}
+                        title="Delete term"
+                      >
+                        Delete
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           ))}
-          {glossary.length === 0 && (
-            <li className="text-sm text-gray-500">No terms yet.</li>
-          )}
-        </ul>
-      </Block>
-
-      {/* PDFs */}
-      <Block title="Knowledge Base (PDFs)">
-        <div className="mb-3">
-          <input type="file" accept="application/pdf" onChange={onPDF} />
         </div>
-        <ul className="list-disc ml-6 space-y-2">
-          {pdfs.map((p) => (
-            <li key={p.id}>
-              <a
-                className="text-blue-700 underline"
-                href={p.dataUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {p.name}
-              </a>
-              <button
-                className="ml-2 text-sm px-2 py-1 border rounded border-red-500 text-red-600"
-                onClick={() => delPDF(p.id)}
-              >
-                Delete
-              </button>
-            </li>
-          ))}
-          {pdfs.length === 0 && (
-            <li className="text-sm text-gray-500">No PDFs uploaded yet.</li>
-          )}
-        </ul>
-      </Block>
+      </section>
 
-      {/* NAICS */}
-      <Block title="NAICS Look Up">
-        <div className="flex gap-2 mb-3">
+      {/* Block: Knowledge Base (PDFs) */}
+      <section className="border-2 border-black rounded-xl p-6">
+        <h2 className="text-2xl font-bold mb-4">Knowledge Base (PDFs)</h2>
+
+        <input type="file" accept="application/pdf" onChange={onUploadPdf} className="mb-3" />
+        {pdfs.length === 0 ? (
+          <div className="text-gray-600">No PDFs uploaded yet.</div>
+        ) : (
+          <ul className="list-disc pl-5 space-y-2">
+            {pdfs.map((p) => (
+              <li key={p.id}>
+                <a
+                  href={p.dataUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-700 underline"
+                >
+                  {p.name}
+                </a>
+                <button className="ml-3 text-red-600" onClick={() => removePdf(p.id)}>
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-gray-500 mt-3">
+          PDFs are stored locally in your browser (localStorage). Keep files small for now.
+        </p>
+      </section>
+
+      {/* Block: NAICS Look Up */}
+      <section className="border-2 border-black rounded-xl p-6">
+        <h2 className="text-2xl font-bold mb-4">NAICS Look Up</h2>
+
+        <form onSubmit={searchNaics} className="flex gap-2 mb-3">
           <input
-            className="border rounded px-2 py-1 flex-1"
-            placeholder="Enter keyword…"
+            className="border px-3 py-2 rounded w-64"
+            placeholder="Enter keyword (e.g., security)"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <button
-            className="px-3 py-1 border rounded bg-black text-white"
-            onClick={searchNaics}
-            disabled={busy}
-          >
-            {busy ? 'Searching…' : 'Search'}
+          <button type="submit" className="px-4 py-2 border rounded bg-black text-white">
+            Search
           </button>
-        </div>
-        {err && <div className="text-sm text-red-600 mb-2">{err}</div>}
-        <ul className="space-y-2">
-          {results.map((r, i) => (
-            <li key={i} className="border rounded px-3 py-2">
-              <div className="font-semibold">{r.code} — {r.title}</div>
-              {r.description && <div className="text-sm text-gray-700">{r.description}</div>}
-            </li>
-          ))}
-          {!busy && results.length === 0 && (
-            <li className="text-sm text-gray-500">No results yet.</li>
-          )}
-        </ul>
-      </Block>
+        </form>
+
+        {naicsLoading && <div>Searching…</div>}
+        {naicsError && <div className="text-red-600">{naicsError}</div>}
+        {naicsResults.length > 0 && (
+          <ul className="space-y-2">
+            {naicsResults.map((r) => (
+              <li key={r.code} className="border rounded p-3">
+                <div className="font-semibold">{r.code}</div>
+                <div className="text-gray-700">{r.title}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
