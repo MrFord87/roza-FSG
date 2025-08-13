@@ -285,8 +285,7 @@ export default function Info() {
         </div>
 
         {naicsError && <div className="mt-3 text-sm text-red-600">{naicsError}</div>}
-
-        <div className="mt-4 grid gap-3">
+<div className="mt-4 grid gap-3">
   {Array.isArray(naicsResults) && naicsResults.length > 0 ? (
     naicsResults.map((r) => (
       <div key={`${r.code}-${r.title}`} className="border border-gray-200 rounded p-3">
@@ -298,11 +297,10 @@ export default function Info() {
         )}
       </div>
     ))
-  ) : (
-    !naicsLoading && !naicsError && (
-      <div className="text-sm text-gray-600">
-        No results yet. Try “IT”, “construction”, or code “541512”.
-      </div>
-  }
+  ) : !naicsLoading && !naicsError ? (
+    <div className="text-sm text-gray-600">
+      No results yet. Try “IT”, “construction”, or code “541512”.
+    </div>
+  ) : null}
 </div>
-
+        
