@@ -1,285 +1,202 @@
 // components/Info.js
-import React, { useEffect, useMemo, useState } from 'react';
-
-// ---------- tiny helpers ----------
-const ls = {
-  get(key, fallback) {
-    if (typeof window === 'undefined') return fallback;
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch {
-      return fallback;
-    }
-  },
-  set(key, value) {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
-  },
-};
-const fmtTime = (d) =>
-  new Date(d).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-
-// ---------- styles (inline, no CSS deps) ----------
-const pageWrap = { padding: 16, maxWidth: 1200, margin: '0 auto' };
-
-const gridBase = { display: 'grid', gridTemplateColumns: '1fr', gap: 16 };
-const card = {
-  background: '#ffffff',
-  border: '1px solid #e5e7eb',
-  borderRadius: 12,
-  padding: 16,
-  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-};
-const cardTitle = { fontSize: 18, fontWeight: 700, margin: '0 0 12px 0' };
-const row = { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 };
-const input = {
-  flex: 1,
-  height: 36,
-  border: '1px solid #e5e7eb',
-  borderRadius: 8,
-  padding: '0 10px',
-  outline: 'none',
-};
-const button = {
-  height: 36,
-  padding: '0 12px',
-  borderRadius: 8,
-  border: '1px solid #e5e7eb',
-  background: '#111827',
-  color: '#fff',
-  cursor: 'pointer',
-};
-const subtle = { color: '#6b7280', fontSize: 13 };
-const list = { marginTop: 6, paddingLeft: 18 };
+import React, { useEffect, useState } from 'react';
 
 export default function Info() {
-  // responsive 1 -> 2 columns
-  const [cols, setCols] = useState(1);
+  // --- Glossary (minimal starter; extend as needed)
+  const [glossary, setGlossary] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('roza_glossary') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [term, setTerm] = useState('');
+  const [defn, setDefn] = useState('');
+
   useEffect(() => {
-    const set = () => setCols(typeof window !== 'undefined' && window.innerWidth >= 900 ? 2 : 1);
-    set();
-    window.addEventListener('resize', set);
-    return () => window.removeEventListener('resize', set);
-  }, []);
-  const grid = useMemo(
-    () => ({ ...gridBase, gridTemplateColumns: cols === 2 ? '1fr 1fr' : '1fr' }),
-    [cols]
-  );
-
-  // ---------- Glossary ----------
-  const [gTerm, setGTerm] = useState('');
-  const [gDef, setGDef] = useState('');
-  const [gSearch, setGSearch] = useState('');
-  const [terms, setTerms] = useState(() => ls.get('roza_info_glossary', []));
-  useEffect(() => ls.set('roza_info_glossary', terms), [terms]);
-
-  const filteredTerms = useMemo(() => {
-    const q = gSearch.trim().toLowerCase();
-    if (!q) return terms;
-    return terms.filter(
-      (t) =>
-        t.term.toLowerCase().includes(q) || t.definition.toLowerCase().includes(q)
-    );
-  }, [gSearch, terms]);
+    localStorage.setItem('roza_glossary', JSON.stringify(glossary));
+  }, [glossary]);
 
   const addTerm = () => {
-    const term = gTerm.trim();
-    const definition = gDef.trim();
-    if (!term || !definition) return;
-    setTerms((prev) => [{ id: crypto.randomUUID(), term, definition }, ...prev]);
-    setGTerm(''); setGDef('');
+    if (!term.trim() || !defn.trim()) return;
+    setGlossary([
+      ...glossary,
+      { id: crypto.randomUUID(), term: term.trim(), definition: defn.trim() },
+    ]);
+    setTerm('');
+    setDefn('');
   };
-  const removeTerm = (id) => setTerms((prev) => prev.filter((t) => t.id !== id));
 
-  // ---------- NAICS Lookup ----------
+  const delTerm = (id) => setGlossary(glossary.filter((g) => g.id !== id));
+
+  // --- Knowledge Base PDFs (store as data URLs for MVP)
+  const [pdfs, setPdfs] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('roza_pdfs') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('roza_pdfs', JSON.stringify(pdfs));
+  }, [pdfs]);
+
+  const onPDF = async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPdfs([
+        ...pdfs,
+        { id: crypto.randomUUID(), name: f.name, dataUrl: reader.result },
+      ]);
+    };
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  };
+
+  const delPDF = (id) => setPdfs(pdfs.filter((p) => p.id !== id));
+
+  // --- NAICS lookup (client → /api/naics?query=...)
   const [q, setQ] = useState('');
-  const [naicsLoading, setNaicsLoading] = useState(false);
-  const [naicsError, setNaicsError] = useState('');
-  const [naicsResults, setNaicsResults] = useState([]);
+  const [results, setResults] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
 
   const searchNaics = async () => {
     if (!q.trim()) return;
-    setNaicsLoading(true);
-    setNaicsError('');
-    setNaicsResults([]);
+    setBusy(true);
+    setErr('');
     try {
-      const res = await fetch(`/api/naics?q=${encodeURIComponent(q)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setNaicsResults(Array.isArray(data?.results) ? data.results : []);
+      const r = await fetch(`/api/naics?query=${encodeURIComponent(q.trim())}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      setResults(Array.isArray(data?.items) ? data.items : []);
     } catch (e) {
-      setNaicsError('Network error. Confirm /pages/api/naics.js exists & is deployed.');
+      setErr('Search failed. Try another term.');
+      setResults([]);
     } finally {
-      setNaicsLoading(false);
+      setBusy(false);
     }
   };
 
-  // ---------- Knowledge Base (PDFs) ----------
-  const [pdfs, setPdfs] = useState(() => ls.get('roza_info_pdfs', []));
-  useEffect(() => ls.set('roza_info_pdfs', pdfs), [pdfs]);
-
-  const onUploadPdf = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPdfs((prev) => [
-        { id: crypto.randomUUID(), name: file.name, size: file.size, addedAt: Date.now(), dataUrl: reader.result },
-        ...prev,
-      ]);
-    };
-    reader.readAsDataURL(file); // store as data URL; opens directly in a new tab
-    e.target.value = '';
-  };
-  const removePdf = (id) => setPdfs((prev) => prev.filter((p) => p.id !== id));
-  const viewPdf = (p) => {
-    // open the data URL directly so we don’t land on about:blank with an extra “Open” step
-    window.open(p.dataUrl, '_blank', 'noopener,noreferrer');
-  };
+  const Block = ({ title, children }) => (
+    <div className="p-5 border-2 border-black rounded-xl mb-6 bg-white">
+      <h2 className="text-2xl font-extrabold mb-4">{title}</h2>
+      {children}
+    </div>
+  );
 
   return (
-    <div style={pageWrap}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, margin: '6px 0 18px' }}>Info</h1>
-
-      <div style={grid}>
-        {/* ---------- Glossary card ---------- */}
-        <section style={card}>
-          <h2 style={cardTitle}>Government Contracting Glossary</h2>
-
-          <div style={{ ...row, marginBottom: 6 }}>
-            <input
-              style={input}
-              placeholder="Term (e.g., RFP)"
-              value={gTerm}
-              onChange={(e) => setGTerm(e.target.value)}
-            />
-            <input
-              style={input}
-              placeholder="Definition"
-              value={gDef}
-              onChange={(e) => setGDef(e.target.value)}
-            />
-            <button style={button} onClick={addTerm}>Add</button>
-          </div>
-
+    <div className="max-w-4xl">
+      {/* Glossary */}
+      <Block title="Government Contracting Glossary">
+        <div className="flex gap-2 mb-3">
           <input
-            style={{ ...input, marginBottom: 10 }}
-            placeholder="Search terms or definitions…"
-            value={gSearch}
-            onChange={(e) => setGSearch(e.target.value)}
+            className="border rounded px-2 py-1 flex-1"
+            placeholder="Term"
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
           />
+          <input
+            className="border rounded px-2 py-1 flex-[2]"
+            placeholder="Definition"
+            value={defn}
+            onChange={(e) => setDefn(e.target.value)}
+          />
+          <button
+            className="px-3 py-1 border rounded bg-black text-white"
+            onClick={addTerm}
+          >
+            Add
+          </button>
+        </div>
 
-          {filteredTerms.length === 0 ? (
-            <div style={subtle}>No terms yet.</div>
-          ) : (
-            <ul style={list}>
-              {filteredTerms.map((t) => (
-                <li key={t.id} style={{ marginBottom: 8 }}>
-                  <strong>{t.term}</strong> — {t.definition}{' '}
-                  <button
-                    onClick={() => removeTerm(t.id)}
-                    style={{
-                      ...button,
-                      height: 26,
-                      padding: '0 8px',
-                      marginLeft: 8,
-                      background: '#ef4444',
-                      borderColor: '#ef4444',
-                    }}
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
+        <ul className="space-y-2">
+          {glossary.map((g) => (
+            <li
+              key={g.id}
+              className="border rounded px-3 py-2 flex items-start justify-between"
+            >
+              <div>
+                <div className="font-semibold">{g.term}</div>
+                <div className="text-sm text-gray-700">{g.definition}</div>
+              </div>
+              <button
+                className="text-sm px-2 py-1 border rounded border-red-500 text-red-600"
+                onClick={() => delTerm(g.id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+          {glossary.length === 0 && (
+            <li className="text-sm text-gray-500">No terms yet.</li>
           )}
-        </section>
+        </ul>
+      </Block>
 
-        {/* ---------- NAICS card ---------- */}
-        <section style={card}>
-          <h2 style={cardTitle}>NAICS Look Up</h2>
-
-          <div style={{ ...row, marginBottom: 6 }}>
-            <input
-              style={input}
-              placeholder="Enter keyword (e.g., security)"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && searchNaics()}
-            />
-            <button style={button} onClick={searchNaics} disabled={naicsLoading}>
-              {naicsLoading ? 'Searching…' : 'Search'}
-            </button>
-          </div>
-
-          {naicsError && <div style={{ color: '#b91c1c', marginBottom: 6 }}>{naicsError}</div>}
-
-          {naicsResults.length === 0 ? (
-            <div style={subtle}>No results yet.</div>
-          ) : (
-            <ul style={list}>
-              {naicsResults.map((r, idx) => (
-                <li key={idx} style={{ marginBottom: 6 }}>
-                  <strong>{r.code}</strong> — {r.title}
-                </li>
-              ))}
-            </ul>
+      {/* PDFs */}
+      <Block title="Knowledge Base (PDFs)">
+        <div className="mb-3">
+          <input type="file" accept="application/pdf" onChange={onPDF} />
+        </div>
+        <ul className="list-disc ml-6 space-y-2">
+          {pdfs.map((p) => (
+            <li key={p.id}>
+              <a
+                className="text-blue-700 underline"
+                href={p.dataUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {p.name}
+              </a>
+              <button
+                className="ml-2 text-sm px-2 py-1 border rounded border-red-500 text-red-600"
+                onClick={() => delPDF(p.id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+          {pdfs.length === 0 && (
+            <li className="text-sm text-gray-500">No PDFs uploaded yet.</li>
           )}
+        </ul>
+      </Block>
 
-          <div style={{ ...subtle, marginTop: 8 }}>
-            If you see “Network error,” confirm <code>/pages/api/naics.js</code> exists and is deployed.
-          </div>
-        </section>
-
-        {/* ---------- Knowledge Base (spans both columns) ---------- */}
-        <section
-          style={{
-            ...card,
-            gridColumn: cols === 2 ? '1 / -1' : 'auto',
-          }}
-        >
-          <h2 style={cardTitle}>Knowledge Base (PDFs)</h2>
-
-          <div style={{ ...row, marginBottom: 10, justifyContent: 'space-between' }}>
-            <label style={{ ...button, display: 'inline-flex', alignItems: 'center', gap: 8, background: '#111827' }}>
-              <input type="file" accept="application/pdf" onChange={onUploadPdf} style={{ display: 'none' }} />
-              Choose File
-            </label>
-            <div style={subtle}>Stored locally in your browser for now.</div>
-          </div>
-
-          {pdfs.length === 0 ? (
-            <div style={subtle}>No PDFs yet.</div>
-          ) : (
-            <ul style={list}>
-              {pdfs.map((p) => (
-                <li key={p.id} style={{ marginBottom: 8 }}>
-                  <strong>{p.name}</strong> · <span style={subtle}>Added {fmtTime(p.addedAt)}</span>{' '}
-                  <button style={{ ...button, height: 28, padding: '0 10px', marginLeft: 8 }} onClick={() => viewPdf(p)}>
-                    View
-                  </button>
-                  <button
-                    style={{
-                      ...button,
-                      height: 28,
-                      padding: '0 10px',
-                      marginLeft: 6,
-                      background: '#ef4444',
-                      borderColor: '#ef4444',
-                    }}
-                    onClick={() => removePdf(p.id)}
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
+      {/* NAICS */}
+      <Block title="NAICS Look Up">
+        <div className="flex gap-2 mb-3">
+          <input
+            className="border rounded px-2 py-1 flex-1"
+            placeholder="Enter keyword…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <button
+            className="px-3 py-1 border rounded bg-black text-white"
+            onClick={searchNaics}
+            disabled={busy}
+          >
+            {busy ? 'Searching…' : 'Search'}
+          </button>
+        </div>
+        {err && <div className="text-sm text-red-600 mb-2">{err}</div>}
+        <ul className="space-y-2">
+          {results.map((r, i) => (
+            <li key={i} className="border rounded px-3 py-2">
+              <div className="font-semibold">{r.code} — {r.title}</div>
+              {r.description && <div className="text-sm text-gray-700">{r.description}</div>}
+            </li>
+          ))}
+          {!busy && results.length === 0 && (
+            <li className="text-sm text-gray-500">No results yet.</li>
           )}
-        </section>
-      </div>
+        </ul>
+      </Block>
     </div>
   );
 }
