@@ -1,254 +1,279 @@
 // components/Info.js
 import React, { useEffect, useMemo, useState } from 'react';
 
-/* ---------- SSR-safe localStorage helpers ---------- */
-const safeGet = (k, f) => {
-  if (typeof window === 'undefined') return f;
-  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch { return f; }
+// ---------- tiny helpers ----------
+const ls = {
+  get(key, fallback) {
+    if (typeof window === 'undefined') return fallback;
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {}
+  },
 };
-const safeSet = (k, v) => {
-  if (typeof window === 'undefined') return;
-  try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
-};
+const fmtTime = (d) =>
+  new Date(d).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
-/* ---------- simple styles (no Tailwind) ---------- */
-const wrap = { padding: '16px', maxWidth: 1200, margin: '0 auto' };
-const grid = {
-  display: 'grid',
-  gridTemplateColumns: '1fr',
-  gap: '16px',
-};
-const gridWide = {
-  gridColumn: '1 / -1',
-};
+// ---------- styles (inline, no CSS deps) ----------
+const pageWrap = { padding: 16, maxWidth: 1200, margin: '0 auto' };
+
+const gridBase = { display: 'grid', gridTemplateColumns: '1fr', gap: 16 };
 const card = {
-  background: '#fff',
+  background: '#ffffff',
   border: '1px solid #e5e7eb',
   borderRadius: 12,
+  padding: 16,
   boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-  padding: '16px',
 };
-const h1 = { fontSize: 24, fontWeight: 700, marginBottom: 12 };
-const h2 = { fontSize: 18, fontWeight: 600, marginBottom: 10 };
-const row = { display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' };
-const input = { border: '1px solid #d1d5db', borderRadius: 8, padding: '8px 10px', color: '#111', minWidth: 160, flex: 1 };
-const btn = { background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', cursor: 'pointer' };
-const btnLite = { border: '1px solid #d1d5db', background: '#fff', borderRadius: 8, padding: '6px 10px', cursor: 'pointer' };
-const muted = { color: '#6b7280', fontSize: 14 };
-const listDivider = { borderTop: '1px solid #f3f4f6', paddingTop: 8, marginTop: 8 };
+const cardTitle = { fontSize: 18, fontWeight: 700, margin: '0 0 12px 0' };
+const row = { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 };
+const input = {
+  flex: 1,
+  height: 36,
+  border: '1px solid #e5e7eb',
+  borderRadius: 8,
+  padding: '0 10px',
+  outline: 'none',
+};
+const button = {
+  height: 36,
+  padding: '0 12px',
+  borderRadius: 8,
+  border: '1px solid #e5e7eb',
+  background: '#111827',
+  color: '#fff',
+  cursor: 'pointer',
+};
+const subtle = { color: '#6b7280', fontSize: 13 };
+const list = { marginTop: 6, paddingLeft: 18 };
 
 export default function Info() {
-  /* Glossary */
-  const [term, setTerm] = useState('');
-  const [definition, setDefinition] = useState('');
-  const [glossary, setGlossary] = useState([]);
-  const [gSearch, setGSearch] = useState('');
+  // responsive 1 -> 2 columns
+  const [cols, setCols] = useState(1);
+  useEffect(() => {
+    const set = () => setCols(typeof window !== 'undefined' && window.innerWidth >= 900 ? 2 : 1);
+    set();
+    window.addEventListener('resize', set);
+    return () => window.removeEventListener('resize', set);
+  }, []);
+  const grid = useMemo(
+    () => ({ ...gridBase, gridTemplateColumns: cols === 2 ? '1fr 1fr' : '1fr' }),
+    [cols]
+  );
 
-  /* NAICS */
+  // ---------- Glossary ----------
+  const [gTerm, setGTerm] = useState('');
+  const [gDef, setGDef] = useState('');
+  const [gSearch, setGSearch] = useState('');
+  const [terms, setTerms] = useState(() => ls.get('roza_info_glossary', []));
+  useEffect(() => ls.set('roza_info_glossary', terms), [terms]);
+
+  const filteredTerms = useMemo(() => {
+    const q = gSearch.trim().toLowerCase();
+    if (!q) return terms;
+    return terms.filter(
+      (t) =>
+        t.term.toLowerCase().includes(q) || t.definition.toLowerCase().includes(q)
+    );
+  }, [gSearch, terms]);
+
+  const addTerm = () => {
+    const term = gTerm.trim();
+    const definition = gDef.trim();
+    if (!term || !definition) return;
+    setTerms((prev) => [{ id: crypto.randomUUID(), term, definition }, ...prev]);
+    setGTerm(''); setGDef('');
+  };
+  const removeTerm = (id) => setTerms((prev) => prev.filter((t) => t.id !== id));
+
+  // ---------- NAICS Lookup ----------
   const [q, setQ] = useState('');
   const [naicsLoading, setNaicsLoading] = useState(false);
   const [naicsError, setNaicsError] = useState('');
   const [naicsResults, setNaicsResults] = useState([]);
 
-  /* Knowledge Base PDFs */
-  const [pdfs, setPdfs] = useState([]);
-
-  /* Load stored */
-  useEffect(() => {
-    setGlossary(safeGet('roza_glossary', []));
-    setPdfs(safeGet('roza_kb_pdfs', []));
-  }, []);
-
-  /* Persist */
-  useEffect(() => { safeSet('roza_glossary', glossary); }, [glossary]);
-  useEffect(() => { safeSet('roza_kb_pdfs', pdfs); }, [pdfs]);
-
-  /* Glossary actions */
-  const addTerm = () => {
-    const t = term.trim(); const d = definition.trim();
-    if (!t || !d) return;
-    setGlossary(prev => [{ id: crypto.randomUUID(), term: t, definition: d }, ...prev]);
-    setTerm(''); setDefinition('');
-  };
-  const deleteTerm = (id) => setGlossary(prev => prev.filter(x => x.id !== id));
-  const filteredGlossary = useMemo(() => {
-    const s = gSearch.toLowerCase();
-    return !s ? glossary :
-      glossary.filter(x =>
-        x.term.toLowerCase().includes(s) ||
-        x.definition.toLowerCase().includes(s)
-      );
-  }, [glossary, gSearch]);
-
-  /* NAICS */
   const searchNaics = async () => {
     if (!q.trim()) return;
-    setNaicsError(''); setNaicsLoading(true); setNaicsResults([]);
+    setNaicsLoading(true);
+    setNaicsError('');
+    setNaicsResults([]);
     try {
-      const res = await fetch(`/api/naics?q=${encodeURIComponent(q.trim())}`);
+      const res = await fetch(`/api/naics?q=${encodeURIComponent(q)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setNaicsResults(Array.isArray(data?.results) ? data.results : []);
-    } catch {
-      setNaicsError('Network error. Make sure /pages/api/naics.js exists and is deployed.');
+    } catch (e) {
+      setNaicsError('Network error. Confirm /pages/api/naics.js exists & is deployed.');
     } finally {
       setNaicsLoading(false);
     }
   };
 
-  /* PDFs */
-  const onPdfUpload = (e) => {
+  // ---------- Knowledge Base (PDFs) ----------
+  const [pdfs, setPdfs] = useState(() => ls.get('roza_info_pdfs', []));
+  useEffect(() => ls.set('roza_info_pdfs', pdfs), [pdfs]);
+
+  const onUploadPdf = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.type !== 'application/pdf') { alert('Please choose a PDF.'); return; }
     const reader = new FileReader();
     reader.onload = () => {
-      const entry = {
-        id: crypto.randomUUID(),
-        name: file.name,
-        base64: reader.result, // data:application/pdf;base64,....
-        addedAt: new Date().toISOString(),
-      };
-      setPdfs(prev => [entry, ...prev]);
-      e.target.value = '';
+      setPdfs((prev) => [
+        { id: crypto.randomUUID(), name: file.name, size: file.size, addedAt: Date.now(), dataUrl: reader.result },
+        ...prev,
+      ]);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(file); // store as data URL; opens directly in a new tab
+    e.target.value = '';
   };
-
-  const viewPdf = (entry) => {
-    try {
-      const [meta, b64] = entry.base64.split(',');
-      const byteString = atob(b64);
-      const len = byteString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) bytes[i] = byteString.charCodeAt(i);
-      const blob = new Blob([bytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer'); // opens directly in new tab
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch {
-      alert('Could not open PDF. Try re-uploading it.');
-    }
-  };
-
-  const deletePdf = (id) => setPdfs(prev => prev.filter(p => p.id !== id));
-
-  /* Responsive grid for larger screens */
-  const gridResponsive = {
-    ...grid,
-    // 2 columns on tablets/desktop
-    gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth >= 900 ? '1fr 1fr' : '1fr'
+  const removePdf = (id) => setPdfs((prev) => prev.filter((p) => p.id !== id));
+  const viewPdf = (p) => {
+    // open the data URL directly so we don’t land on about:blank with an extra “Open” step
+    window.open(p.dataUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
-    <div style={wrap}>
-      <h1 style={h1}>Info</h1>
+    <div style={pageWrap}>
+      <h1 style={{ fontSize: 28, fontWeight: 800, margin: '6px 0 18px' }}>Info</h1>
 
-      <div style={gridResponsive}>
-        {/* Glossary */}
+      <div style={grid}>
+        {/* ---------- Glossary card ---------- */}
         <section style={card}>
-          <h2 style={h2}>Government Contracting Glossary</h2>
+          <h2 style={cardTitle}>Government Contracting Glossary</h2>
 
-          <div style={row}>
+          <div style={{ ...row, marginBottom: 6 }}>
             <input
               style={input}
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
               placeholder="Term (e.g., RFP)"
+              value={gTerm}
+              onChange={(e) => setGTerm(e.target.value)}
             />
             <input
-              style={{ ...input, flex: 2 }}
-              value={definition}
-              onChange={(e) => setDefinition(e.target.value)}
+              style={input}
               placeholder="Definition"
+              value={gDef}
+              onChange={(e) => setGDef(e.target.value)}
             />
-            <button style={btn} onClick={addTerm}>Add</button>
+            <button style={button} onClick={addTerm}>Add</button>
           </div>
 
           <input
-            style={{ ...input, marginBottom: 8 }}
+            style={{ ...input, marginBottom: 10 }}
+            placeholder="Search terms or definitions…"
             value={gSearch}
             onChange={(e) => setGSearch(e.target.value)}
-            placeholder="Search terms or definitions…"
           />
 
-          {filteredGlossary.length === 0 ? (
-            <p style={muted}>No terms yet.</p>
+          {filteredTerms.length === 0 ? (
+            <div style={subtle}>No terms yet.</div>
           ) : (
-            <div>
-              {filteredGlossary.map(item => (
-                <div key={item.id} style={listDivider}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{item.term}</div>
-                      <div style={{ color: '#374151', fontSize: 14 }}>{item.definition}</div>
-                    </div>
-                    <button style={{ ...btnLite, color: '#dc2626', borderColor: '#fecaca' }} onClick={() => deleteTerm(item.id)}>
-                      Delete
-                    </button>
-                  </div>
-                </div>
+            <ul style={list}>
+              {filteredTerms.map((t) => (
+                <li key={t.id} style={{ marginBottom: 8 }}>
+                  <strong>{t.term}</strong> — {t.definition}{' '}
+                  <button
+                    onClick={() => removeTerm(t.id)}
+                    style={{
+                      ...button,
+                      height: 26,
+                      padding: '0 8px',
+                      marginLeft: 8,
+                      background: '#ef4444',
+                      borderColor: '#ef4444',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </section>
 
-        {/* NAICS Look Up */}
+        {/* ---------- NAICS card ---------- */}
         <section style={card}>
-          <h2 style={h2}>NAICS Look Up</h2>
-          <div style={row}>
+          <h2 style={cardTitle}>NAICS Look Up</h2>
+
+          <div style={{ ...row, marginBottom: 6 }}>
             <input
               style={input}
+              placeholder="Enter keyword (e.g., security)"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Enter keyword (e.g., security)"
+              onKeyDown={(e) => e.key === 'Enter' && searchNaics()}
             />
-            <button style={btn} onClick={searchNaics} disabled={naicsLoading}>
+            <button style={button} onClick={searchNaics} disabled={naicsLoading}>
               {naicsLoading ? 'Searching…' : 'Search'}
             </button>
           </div>
-          {naicsError && <p style={{ color: '#dc2626', marginBottom: 8 }}>{naicsError}</p>}
+
+          {naicsError && <div style={{ color: '#b91c1c', marginBottom: 6 }}>{naicsError}</div>}
 
           {naicsResults.length === 0 ? (
-            <p style={muted}>No results yet.</p>
+            <div style={subtle}>No results yet.</div>
           ) : (
-            <div style={{ maxHeight: 320, overflow: 'auto' }}>
-              {naicsResults.map((r, i) => (
-                <div key={i} style={listDivider}>
-                  <div style={{ fontWeight: 600 }}>{r.code} — {r.title}</div>
-                  {r.description && <div style={{ color: '#374151', fontSize: 14 }}>{r.description}</div>}
-                </div>
+            <ul style={list}>
+              {naicsResults.map((r, idx) => (
+                <li key={idx} style={{ marginBottom: 6 }}>
+                  <strong>{r.code}</strong> — {r.title}
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-          <p style={{ ...muted, marginTop: 8 }}>
+
+          <div style={{ ...subtle, marginTop: 8 }}>
             If you see “Network error,” confirm <code>/pages/api/naics.js</code> exists and is deployed.
-          </p>
+          </div>
         </section>
 
-        {/* Knowledge Base (PDFs) */}
-        <section style={{ ...card, ...gridWide }}>
-          <h2 style={h2}>Knowledge Base (PDFs)</h2>
+        {/* ---------- Knowledge Base (spans both columns) ---------- */}
+        <section
+          style={{
+            ...card,
+            gridColumn: cols === 2 ? '1 / -1' : 'auto',
+          }}
+        >
+          <h2 style={cardTitle}>Knowledge Base (PDFs)</h2>
 
-          <div style={{ ...row, alignItems: 'center' }}>
-            <input type="file" accept="application/pdf" onChange={onPdfUpload} />
-            <span style={muted}>Stored locally in your browser for now.</span>
+          <div style={{ ...row, marginBottom: 10, justifyContent: 'space-between' }}>
+            <label style={{ ...button, display: 'inline-flex', alignItems: 'center', gap: 8, background: '#111827' }}>
+              <input type="file" accept="application/pdf" onChange={onUploadPdf} style={{ display: 'none' }} />
+              Choose File
+            </label>
+            <div style={subtle}>Stored locally in your browser for now.</div>
           </div>
 
           {pdfs.length === 0 ? (
-            <p style={muted}>No PDFs uploaded yet.</p>
+            <div style={subtle}>No PDFs yet.</div>
           ) : (
-            <ul style={{ paddingLeft: 16 }}>
-              {pdfs.map(p => (
+            <ul style={list}>
+              {pdfs.map((p) => (
                 <li key={p.id} style={{ marginBottom: 8 }}>
-                  <span style={{ fontWeight: 600 }}>{p.name}</span>
-                  <span style={muted}> • Added {new Date(p.addedAt).toLocaleString()}</span>
-                  <div style={{ display: 'inline-flex', gap: 8, marginLeft: 8 }}>
-                    <button style={btnLite} onClick={() => viewPdf(p)}>View</button>
-                    <button style={{ ...btnLite, color: '#dc2626', borderColor: '#fecaca' }} onClick={() => deletePdf(p.id)}>
-                      Delete
-                    </button>
-                  </div>
+                  <strong>{p.name}</strong> · <span style={subtle}>Added {fmtTime(p.addedAt)}</span>{' '}
+                  <button style={{ ...button, height: 28, padding: '0 10px', marginLeft: 8 }} onClick={() => viewPdf(p)}>
+                    View
+                  </button>
+                  <button
+                    style={{
+                      ...button,
+                      height: 28,
+                      padding: '0 10px',
+                      marginLeft: 6,
+                      background: '#ef4444',
+                      borderColor: '#ef4444',
+                    }}
+                    onClick={() => removePdf(p.id)}
+                  >
+                    Delete
+                  </button>
                 </li>
               ))}
             </ul>
