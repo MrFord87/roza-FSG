@@ -6,7 +6,6 @@ import Info from '../components/Info';
 import Sources from '../components/Sources';
 import Bookmarks from '../components/Bookmarks';
 import Proposals from '../components/Proposals';
-import RozaAssistant from '../components/RozaAssistant';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(() => {
