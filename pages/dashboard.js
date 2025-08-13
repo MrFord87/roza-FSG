@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
-import Contracts from '../components/Contracts';
-import Contacts from '../components/Contacts';
-import Info from '../components/Info';
-import Sources from '../components/Sources';
+import Contracts from '../components/contracts';
+import Contacts from '../components/contacts';
+import Info from '../components/info';
+import Sources from '../components/sources';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
