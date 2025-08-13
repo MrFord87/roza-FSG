@@ -44,9 +44,16 @@ export default function Dashboard() {
         return (
           <div className="p-4">
           <h2 className="text-xl font-semibold mb-2">This Week</h2>
-        <MiniWeek/>
-          </div>
-        );
+        <MiniWeek
+          onOpencalendar={(date) => {
+            try {
+             localStorage.setItem('rozaCalendarFocusDate',date.toISOString());
+            }catch {}
+              setActiveTab('calendar');
+          }}
+            />
+            </div>
+            );
       case 'info':
         return <Info />;
       case 'sources':
