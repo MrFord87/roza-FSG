@@ -1,32 +1,37 @@
-// components/MiniWeek.js
-import React from 'react';
+import React, { useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 
-// FullCalendar CSS (needed for the block layout)
-// You can keep these here or move them into pages/_app.js
-import '@fullcalendar/common/main.css';
-import '@fullcalendar/daygrid/main.css';
+import '@fullcalendar/common/index.css';
+import '@fullcalendar/daygrid/index.css';
 
-export default function MiniWeek({ events = [], onOpenCalendar }) {
+export default function MiniWeek({ onOpenCalendar }) {
+  // pull any saved events you already use in the big calendar
+  const events = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('rozaEvents');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
   return (
-    <div className="border border-gray-300 rounded-md overflow-hidden"
-         style={{ maxWidth: 900 }}>
+    <div>
       <FullCalendar
         plugins={[dayGridPlugin]}
-        initialView="dayGridWeek"     // single-week block layout
-        headerToolbar={false}         // no toolbar, just the grid
-        dayHeaders={true}             // show Mon/Tue/Wed... inside the grid header
-        height="auto"
-        contentHeight={180}           // compact on the dashboard
-        stickyHeaderDates={false}
+        initialView="dayGridWeek"
+        headerToolbar={false}              // no external header rows
         fixedWeekCount={false}
-        showNonCurrentDates={false}
+        height="auto"
+        contentHeight="auto"
+        dayMaxEvents={2}
+        dayHeaderFormat={{ weekday: 'short' }} // Mon, Tue, ...
         events={events}
-        eventDisplay="block"
-        // jump to full calendar when clicking a date or event
-        dateClick={(info) => onOpenCalendar && onOpenCalendar(info.date)}
-        eventClick={(info) => onOpenCalendar && onOpenCalendar(info.event.start)}
+        dateClick={(info) => {
+          // jump to the main calendar focused on this date
+          onOpenCalendar?.(info.date);
+        }}
       />
     </div>
   );
