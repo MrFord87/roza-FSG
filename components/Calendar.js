@@ -1,188 +1,231 @@
 // components/Calendar.js
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calendar as RBC, momentLocalizer } from 'react-big-calendar';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const localizer = momentLocalizer(moment);
+const STORAGE_KEY = 'rozaCalendarEvents';
 
-// SSR-safe localStorage helpers
-const safeGet = (k, f) => {
-  if (typeof window === 'undefined') return f;
-  try {
-    const r = localStorage.getItem(k);
-    return r ? JSON.parse(r) : f;
-  } catch {
-    return f;
-  }
-};
-const safeSet = (k, v) => {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(k, JSON.stringify(v));
-  } catch {}
-};
+function PortalModal({ open, title, children, onClose }) {
+  if (!open || typeof document === 'undefined') return null;
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 99999,
+        background: 'rgba(0,0,0,0.4)', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', padding: 16,
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
+      <div
+        role="dialog" aria-modal="true" tabIndex={-1}
+        style={{
+          width: '100%', maxWidth: 520, background: 'white', color: 'black',
+          borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.2)', padding: 16, outline: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <h3 style={{ margin: 0 }}>{title}</h3>
+          <button onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div style={{ marginTop: 12 }}>{children}</div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
-export default function Calendar() {
+export default function MyCalendar() {
   const [events, setEvents] = useState([]);
-  const [draft, setDraft] = useState({
-    open: false,
-    start: null,
-    end: null,
-    text: '',
-  });
+  const [note, setNote] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState(null);   // Date for new event start
+  const [selectedEvent, setSelectedEvent] = useState(null); // Event being edited
+  const inputRef = useRef(null);
 
-  // load/save
-  useEffect(() => setEvents(safeGet('roza_calendar_events', [])), []);
-  useEffect(() => safeSet('roza_calendar_events', events), [events]);
-
-  // CLICK a day cell (month) or a time slot (week/day) to open input
-  const onSelectSlot = useCallback(({ start, end }) => {
-    setDraft({ open: true, start, end, text: '' });
+  // ✅ Load events from localStorage on mount (rehydrate Date fields)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw).map(ev => ({
+          ...ev,
+          start: new Date(ev.start),
+          end: new Date(ev.end),
+        }));
+        setEvents(parsed);
+      }
+    } catch (e) {
+      console.warn('Failed to load calendar events:', e);
+    }
   }, []);
 
-  const addEvent = () => {
-    const title = draft.text.trim();
-    if (!title) return;
-    const newEvent = {
-      id: crypto.randomUUID(),
-      title,
-      start: draft.start,
-      end: draft.end,
-      completed: false,
+  // ✅ Save events to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    } catch (e) {
+      console.warn('Failed to save calendar events:', e);
+    }
+  }, [events]);
+
+  // Autofocus input when a modal opens
+  useEffect(() => {
+    if (!selectedSlot && !selectedEvent) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 60);
+    return () => clearTimeout(t);
+  }, [selectedSlot, selectedEvent]);
+
+  // Handlers
+  const handleSelectSlot = ({ start }) => {
+    setSelectedEvent(null);
+    setSelectedSlot(start);
+    setNote('');
+  };
+
+  const handleSelectEvent = (event) => {
+    setSelectedSlot(null);
+    setSelectedEvent(event);
+    setNote(event.title);
+  };
+
+  const handleSaveNew = () => {
+    if (!note.trim() || !selectedSlot) return;
+    const start = new Date(selectedSlot);
+    const end = moment(start).add(1, 'hour').toDate();
+    setEvents(prev => [...prev, { id: Date.now(), title: note.trim(), start, end, completed: false }]);
+    setSelectedSlot(null);
+    setNote('');
+  };
+
+  const handleUpdate = () => {
+    if (!selectedEvent) return;
+    setEvents(prev => prev.map(ev => (ev.id === selectedEvent.id ? { ...ev, title: note.trim() } : ev)));
+    setSelectedEvent(null);
+    setNote('');
+  };
+
+  const handleDelete = () => {
+    if (!selectedEvent) return;
+    setEvents(prev => prev.filter(ev => ev.id !== selectedEvent.id));
+    setSelectedEvent(null);
+    setNote('');
+  };
+
+  const handleComplete = () => {
+    if (!selectedEvent) return;
+    setEvents(prev => prev.map(ev => (ev.id === selectedEvent.id ? { ...ev, completed: true } : ev)));
+    setSelectedEvent(null);
+    setNote('');
+  };
+
+  // Styling for events
+  const eventStyleGetter = (event) => {
+    const style = {
+      backgroundColor: event.completed ? 'green' : '#2563eb',
+      color: 'white',
+      borderRadius: 4,
+      border: 'none',
+      display: 'block',
+      textDecoration: event.completed ? 'line-through' : 'none',
     };
-    setEvents((prev) => [newEvent, ...prev]);
-    setDraft({ open: false, start: null, end: null, text: '' });
+    return { style };
   };
-
-  const cancelDraft = () =>
-    setDraft({ open: false, start: null, end: null, text: '' });
-
-  const deleteEvent = (id) => {
-    if (!window.confirm('Delete this entry?')) return;
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-  };
-
-  const toggleComplete = (id) => {
-    setEvents((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, completed: !e.completed } : e))
-    );
-  };
-
-  const editEvent = (id) => {
-    const existing = events.find((e) => e.id === id);
-    const next = window.prompt('Update note text:', existing?.title || '');
-    if (next == null) return;
-    setEvents((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, title: next.trim() } : e))
-    );
-  };
-
-  const eventPropGetter = useCallback(
-    (event) => ({
-      style: {
-        backgroundColor: event.completed ? '#16a34a' : '#2563eb',
-        border: 0,
-        color: '#fff',
-        opacity: 0.92,
-      },
-      className: event.completed ? 'line-through' : '',
-    }),
-    []
-  );
-
-  // Inline event renderer with action buttons
-  const components = useMemo(
-    () => ({
-      event: ({ event }) => (
-        <div className="flex flex-col">
-          <div className="font-medium">{event.title}</div>
-          <div className="mt-1 flex gap-1 flex-wrap">
-            <button
-              onClick={() => toggleComplete(event.id)}
-              className="text-[11px] px-1 rounded bg-white text-black"
-              title={event.completed ? 'Mark as not completed' : 'Mark completed'}
-            >
-              {event.completed ? 'Uncomplete' : 'Complete'}
-            </button>
-            <button
-              onClick={() => editEvent(event.id)}
-              className="text-[11px] px-1 rounded bg-white text-black"
-              title="Edit"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => deleteEvent(event.id)}
-              className="text-[11px] px-1 rounded bg-white text-red-600"
-              title="Delete"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ),
-    }),
-    [events]
-  );
 
   return (
-    <div style={{ minHeight: '78vh', padding: '1rem' }}>
-      <h2 className="text-2xl font-bold mb-3">ROZA Calendar</h2>
+    <div style={{ height: '85vh', padding: '1rem' }}>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>ROZA Calendar</h1>
 
-      {/* Inline quick-add panel */}
-      {draft.open && (
-        <div className="border rounded-lg bg-white p-3 mb-3">
-          <div className="font-semibold mb-1">
-            Add Note —{' '}
-            {moment(draft.start).format('MMM D, YYYY')} {moment(draft.start).format('h:mm A')}
-            {draft.end && ` → ${moment(draft.end).format('h:mm A')}`}
-          </div>
-          <input
-            type="text"
-            value={draft.text}
-            onChange={(e) => setDraft((d) => ({ ...d, text: e.target.value }))}
-            placeholder="Type your note…"
-            className="w-full border rounded px-2 py-2 text-black"
-          />
-          <div className="flex gap-2 mt-2">
-            <button onClick={cancelDraft} className="px-3 py-1 border rounded">
-              Cancel
-            </button>
-            <button
-              onClick={addEvent}
-              className="px-3 py-1 rounded text-white"
-              style={{ backgroundColor: '#2563eb' }}
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
-
-      <RBC
+      <Calendar
         localizer={localizer}
         events={events}
+        selectable
+        onSelectSlot={handleSelectSlot}
+        onSelectEvent={handleSelectEvent}
         startAccessor="start"
         endAccessor="end"
-        defaultView="month"
-        views={['month', 'week', 'day', 'agenda']}
-        step={30}
-        timeslots={2}
+        views={['month', 'week', 'day']}
         popup
-        // IMPORTANT: these make clicking the whole day cell open the input
-        selectable
-        onSelectSlot={onSelectSlot}
-        longPressThreshold={1} // mobile single tap
-        eventPropGetter={eventPropGetter}
-        components={components}
-        style={{ height: '70vh', background: 'white' }}
+        longPressThreshold={50}
+        eventPropGetter={eventStyleGetter}
+        style={{ height: '70vh', background: 'white', color: 'black' }}
       />
 
-      <p className="text-sm text-gray-600 mt-2">
-        Tip: Click any **day cell** in Month view, or a **time slot** in Week/Day view to add a note.
-        Click an event to use the action buttons (Edit / Complete / Delete). Saved in your browser.
-      </p>
+      {/* Add Note (Portal) */}
+      <PortalModal
+        open={!!selectedSlot}
+        title={`Add Note – ${selectedSlot ? moment(selectedSlot).format('MMM D, YYYY h:mm A') : ''}`}
+        onClose={() => { setSelectedSlot(null); setNote(''); }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Type your note here..."
+          autoFocus
+          inputMode="text"
+          style={{
+            width: '100%', padding: '0.5rem', marginBottom: '0.75rem',
+            borderRadius: 4, border: '1px solid #ccc', background: 'white', color: 'black',
+          }}
+        />
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button onClick={() => { setSelectedSlot(null); setNote(''); }}>Cancel</button>
+          <button
+            onClick={handleSaveNew}
+            style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: 4 }}
+          >
+            Save Note
+          </button>
+        </div>
+      </PortalModal>
+
+      {/* Edit Note (Portal) */}
+      <PortalModal
+        open={!!selectedEvent}
+        title="Edit Note"
+        onClose={() => { setSelectedEvent(null); setNote(''); }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Update your note..."
+          autoFocus
+          inputMode="text"
+          style={{
+            width: '100%', padding: '0.5rem', marginBottom: '0.75rem',
+            borderRadius: 4, border: '1px solid #ccc', background: 'white', color: 'black',
+          }}
+        />
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button onClick={() => setSelectedEvent(null)}>Cancel</button>
+          <button
+            onClick={handleUpdate}
+            style={{ backgroundColor: '#2563eb', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: 4 }}
+          >
+            Update
+          </button>
+          <button
+            onClick={handleDelete}
+            style={{ backgroundColor: 'red', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: 4 }}
+          >
+            Delete
+          </button>
+          <button
+            onClick={handleComplete}
+            style={{ backgroundColor: 'green', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: 4 }}
+          >
+            Mark Completed
+          </button>
+        </div>
+      </PortalModal>
     </div>
   );
 }
