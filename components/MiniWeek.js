@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 
-import '@fullcalendar/common/index.css';
+import '@fullcalendar/core/index.css';
 import '@fullcalendar/daygrid/index.css';
 
 export default function MiniWeek({ onOpenCalendar }) {
