@@ -1,174 +1,202 @@
-import React, { useState, useEffect } from 'react';
+// components/Info.js
+import React, { useEffect, useState } from 'react';
 
 export default function Info() {
-  // ---- Glossary state ----
-  const [terms, setTerms] = useState([]);
-  const [newTerm, setNewTerm] = useState('');
-  const [newDefinition, setNewDefinition] = useState('');
-  const [editIndex, setEditIndex] = useState(null);
-  const [editTerm, setEditTerm] = useState('');
-  const [editDefinition, setEditDefinition] = useState('');
-
-  // ---- NAICS Look Up state ----
-  const [q, setQ] = useState('');
-  const [naicsLoading, setNaicsLoading] = useState(false);
-  const [naicsError, setNaicsError] = useState('');
-  const [naicsResults, setNaicsResults] = useState([]);
-
-  // ---- Load glossary from localStorage
-  useEffect(() => {
-    const savedTerms = JSON.parse(localStorage.getItem('glossaryTerms')) || [];
-    setTerms(savedTerms);
-  }, []);
-
-  // ---- Save glossary to localStorage
-  useEffect(() => {
-    localStorage.setItem('glossaryTerms', JSON.stringify(terms));
-  }, [terms]);
-
-  // ---- Add term
-  const handleAddTerm = () => {
-    if (!newTerm.trim() || !newDefinition.trim()) return;
-    const updatedTerms = [...terms, { term: newTerm, definition: newDefinition }];
-    setTerms(updatedTerms);
-    setNewTerm('');
-    setNewDefinition('');
-  };
-
-  // ---- Edit term
-  const handleEditTerm = (index) => {
-    setEditIndex(index);
-    setEditTerm(terms[index].term);
-    setEditDefinition(terms[index].definition);
-  };
-
-  const handleSaveEdit = () => {
-    if (!editTerm.trim() || !editDefinition.trim()) return;
-    const updatedTerms = [...terms];
-    updatedTerms[editIndex] = { term: editTerm, definition: editDefinition };
-    setTerms(updatedTerms);
-    setEditIndex(null);
-    setEditTerm('');
-    setEditDefinition('');
-  };
-
-  // ---- Delete term
-  const handleDeleteTerm = (index) => {
-    const updatedTerms = terms.filter((_, i) => i !== index);
-    setTerms(updatedTerms);
-  };
-
-  // ---- NAICS Lookup
-  const handleSearch = async () => {
-    if (!q.trim()) return;
-    setNaicsLoading(true);
-    setNaicsError('');
+  // --- Glossary (minimal starter; extend as needed)
+  const [glossary, setGlossary] = useState(() => {
     try {
-      const res = await fetch(`/api/naics?q=${encodeURIComponent(q)}`);
-      if (!res.ok) throw new Error('Search failed');
-      const data = await res.json();
-      setNaicsResults(data.results || []);
-    } catch (error) {
-      setNaicsError(error.message);
+      return JSON.parse(localStorage.getItem('roza_glossary') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [term, setTerm] = useState('');
+  const [defn, setDefn] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('roza_glossary', JSON.stringify(glossary));
+  }, [glossary]);
+
+  const addTerm = () => {
+    if (!term.trim() || !defn.trim()) return;
+    setGlossary([
+      ...glossary,
+      { id: crypto.randomUUID(), term: term.trim(), definition: defn.trim() },
+    ]);
+    setTerm('');
+    setDefn('');
+  };
+
+  const delTerm = (id) => setGlossary(glossary.filter((g) => g.id !== id));
+
+  // --- Knowledge Base PDFs (store as data URLs for MVP)
+  const [pdfs, setPdfs] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('roza_pdfs') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('roza_pdfs', JSON.stringify(pdfs));
+  }, [pdfs]);
+
+  const onPDF = async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPdfs([
+        ...pdfs,
+        { id: crypto.randomUUID(), name: f.name, dataUrl: reader.result },
+      ]);
+    };
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  };
+
+  const delPDF = (id) => setPdfs(pdfs.filter((p) => p.id !== id));
+
+  // --- NAICS lookup (client → /api/naics?query=...)
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const searchNaics = async () => {
+    if (!q.trim()) return;
+    setBusy(true);
+    setErr('');
+    try {
+      const r = await fetch(`/api/naics?query=${encodeURIComponent(q.trim())}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      setResults(Array.isArray(data?.items) ? data.items : []);
+    } catch (e) {
+      setErr('Search failed. Try another term.');
+      setResults([]);
     } finally {
-      setNaicsLoading(false);
+      setBusy(false);
     }
   };
 
+  const Block = ({ title, children }) => (
+    <div className="p-5 border-2 border-black rounded-xl mb-6 bg-white">
+      <h2 className="text-2xl font-extrabold mb-4">{title}</h2>
+      {children}
+    </div>
+  );
+
   return (
-    <div className="p-6 space-y-8">
+    <div className="max-w-4xl">
       {/* Glossary */}
-      <div className="p-4 border rounded-lg shadow-md bg-white">
-        <h2 className="text-xl font-bold mb-4">Government Contracting Glossary</h2>
-        <div className="mb-4 flex space-x-2">
+      <Block title="Government Contracting Glossary">
+        <div className="flex gap-2 mb-3">
           <input
-            type="text"
+            className="border rounded px-2 py-1 flex-1"
             placeholder="Term"
-            className="border p-2 flex-1"
-            value={newTerm}
-            onChange={(e) => setNewTerm(e.target.value)}
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
           />
           <input
-            type="text"
+            className="border rounded px-2 py-1 flex-[2]"
             placeholder="Definition"
-            className="border p-2 flex-1"
-            value={newDefinition}
-            onChange={(e) => setNewDefinition(e.target.value)}
+            value={defn}
+            onChange={(e) => setDefn(e.target.value)}
           />
-          <button onClick={handleAddTerm} className="bg-blue-600 text-white px-4 py-2 rounded">
+          <button
+            className="px-3 py-1 border rounded bg-black text-white"
+            onClick={addTerm}
+          >
             Add
           </button>
         </div>
-        <ul>
-          {terms.map((item, index) => (
-            <li key={index} className="flex justify-between items-center mb-2">
-              {editIndex === index ? (
-                <>
-                  <input
-                    type="text"
-                    value={editTerm}
-                    onChange={(e) => setEditTerm(e.target.value)}
-                    className="border p-1 flex-1 mr-2"
-                  />
-                  <input
-                    type="text"
-                    value={editDefinition}
-                    onChange={(e) => setEditDefinition(e.target.value)}
-                    className="border p-1 flex-1 mr-2"
-                  />
-                  <button onClick={handleSaveEdit} className="bg-green-500 text-white px-2 py-1 rounded">Save</button>
-                </>
-              ) : (
-                <>
-                  <span><strong>{item.term}</strong>: {item.definition}</span>
-                  <div>
-                    <button onClick={() => handleEditTerm(index)} className="text-blue-500 mr-2">Edit</button>
-                    <button onClick={() => handleDeleteTerm(index)} className="text-red-500">Delete</button>
-                  </div>
-                </>
-              )}
+
+        <ul className="space-y-2">
+          {glossary.map((g) => (
+            <li
+              key={g.id}
+              className="border rounded px-3 py-2 flex items-start justify-between"
+            >
+              <div>
+                <div className="font-semibold">{g.term}</div>
+                <div className="text-sm text-gray-700">{g.definition}</div>
+              </div>
+              <button
+                className="text-sm px-2 py-1 border rounded border-red-500 text-red-600"
+                onClick={() => delTerm(g.id)}
+              >
+                Delete
+              </button>
             </li>
           ))}
+          {glossary.length === 0 && (
+            <li className="text-sm text-gray-500">No terms yet.</li>
+          )}
         </ul>
-      </div>
+      </Block>
 
-      {/* NAICS Lookup */}
-      <div className="p-4 border rounded-lg shadow-md bg-white">
-        <h2 className="text-xl font-bold mb-4">NAICS Look Up</h2>
-        <div className="mb-4 flex space-x-2">
+      {/* PDFs */}
+      <Block title="Knowledge Base (PDFs)">
+        <div className="mb-3">
+          <input type="file" accept="application/pdf" onChange={onPDF} />
+        </div>
+        <ul className="list-disc ml-6 space-y-2">
+          {pdfs.map((p) => (
+            <li key={p.id}>
+              <a
+                className="text-blue-700 underline"
+                href={p.dataUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {p.name}
+              </a>
+              <button
+                className="ml-2 text-sm px-2 py-1 border rounded border-red-500 text-red-600"
+                onClick={() => delPDF(p.id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+          {pdfs.length === 0 && (
+            <li className="text-sm text-gray-500">No PDFs uploaded yet.</li>
+          )}
+        </ul>
+      </Block>
+
+      {/* NAICS */}
+      <Block title="NAICS Look Up">
+        <div className="flex gap-2 mb-3">
           <input
-            type="text"
-            placeholder="Enter keyword..."
-            className="border p-2 flex-1"
+            className="border rounded px-2 py-1 flex-1"
+            placeholder="Enter keyword…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <button onClick={handleSearch} className="bg-blue-600 text-white px-4 py-2 rounded">
-            Search
+          <button
+            className="px-3 py-1 border rounded bg-black text-white"
+            onClick={searchNaics}
+            disabled={busy}
+          >
+            {busy ? 'Searching…' : 'Search'}
           </button>
         </div>
-        {naicsLoading && <p>Loading...</p>}
-        {naicsError && <p className="text-red-500">{naicsError}</p>}
-        <ul>
-          {naicsResults.map((result, idx) => (
-            <li key={idx} className="mb-2">
-              <strong>{result.code}</strong>: {result.title}
+        {err && <div className="text-sm text-red-600 mb-2">{err}</div>}
+        <ul className="space-y-2">
+          {results.map((r, i) => (
+            <li key={i} className="border rounded px-3 py-2">
+              <div className="font-semibold">{r.code} — {r.title}</div>
+              {r.description && <div className="text-sm text-gray-700">{r.description}</div>}
             </li>
           ))}
+          {!busy && results.length === 0 && (
+            <li className="text-sm text-gray-500">No results yet.</li>
+          )}
         </ul>
-      </div>
-
-      {/* Reference PDFs */}
-      <div className="p-4 border rounded-lg shadow-md bg-white">
-        <h2 className="text-xl font-bold mb-4">Reference PDFs</h2>
-        <ul className="list-disc pl-5">
-          <li>
-            <a href="/pdfs/Example1.pdf" target="_blank" rel="noopener noreferrer" className="text-blue-500">
-              Example 1
-            </a>
-          </li>
-        </ul>
-      </div>
+      </Block>
     </div>
   );
 }
