@@ -1,249 +1,145 @@
-// pages/dashboard.js
-import React, { useEffect, useMemo, useState } from 'react';
-import MyCalendar from '../components/Calendar';
+import React, { useState, useEffect } from 'react';
+import Calendar from '../components/Calendar';
+import Contracts from '../components/Contracts';
 import Contacts from '../components/Contacts';
 import Info from '../components/Info';
 import Sources from '../components/Sources';
+import Bookmarks from '../components/Bookmarks';
+import Proposals from '../components/Proposals';
 import RozaAssistant from '../components/RozaAssistant';
-import Contracts from '../components/Contracts';
-
-const CAL_STORAGE_KEY = 'roza_calendar_events_v1'; // <-- if your calendar uses a different key, change this
-
-// -------- Mini Week Calendar (read-only, pulls from localStorage)
-function startOfWeek(d) {
-  const date = new Date(d);
-  const day = date.getDay(); // 0=Sun
-  const diff = date.getDate() - day + 0; // start Sunday; change +1 for Monday
-  const start = new Date(date.setDate(diff));
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-function formatDay(d) {
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-}
-function isSameDay(a, b) {
-  return a.getFullYear() === b.getFullYear() &&
-         a.getMonth() === b.getMonth() &&
-         a.getDate() === b.getDate();
-}
-function MiniWeek() {
-  const [events, setEvents] = useState([]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CAL_STORAGE_KEY);
-      if (raw) setEvents(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const days = useMemo(() => {
-    const start = startOfWeek(new Date());
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return d;
-    });
-  }, []);
-
-  // Normalize events (MyCalendar likely stores {title, start, end, completed?})
-  const normalized = useMemo(() => {
-    return (events || []).map(e => ({
-      ...e,
-      start: new Date(e.start),
-      end: e.end ? new Date(e.end) : new Date(e.start),
-    }));
-  }, [events]);
-
-  const byDay = useMemo(() => {
-    return days.map(day => {
-      const list = normalized.filter(ev => isSameDay(ev.start, day));
-      // Sort by time ascending
-      list.sort((a, b) => (a.start?.getTime?.() || 0) - (b.start?.getTime?.() || 0));
-      return list;
-    });
-  }, [days, normalized]);
-
-  return (
-    <div className="border rounded-lg p-3 bg-white dark:bg-gray-900">
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-semibold">This Week</div>
-        <div className="text-xs text-gray-500">
-          {formatDay(days[0])} – {formatDay(days[6])}
-        </div>
-      </div>
-      <div className="grid grid-cols-7 gap-2">
-        {days.map((day, idx) => (
-          <div key={day.toISOString()} className="border rounded p-2">
-            <div className="text-xs font-semibold mb-1">
-              {formatDay(day)}
-            </div>
-            <div className="space-y-1">
-              {byDay[idx].length === 0 ? (
-                <div className="text-[11px] text-gray-500 italic">No items</div>
-              ) : (
-                byDay[idx].slice(0, 3).map((ev, i) => (
-                  <div
-                    key={i}
-                    className={`text-[11px] px-2 py-1 rounded border ${
-                      ev.completed ? 'bg-green-50 border-green-200 text-green-700 line-through' : 'bg-gray-50 border-gray-200'
-                    }`}
-                    title={ev.title}
-                  >
-                    {ev.start instanceof Date && !isNaN(ev.start)
-                      ? ev.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · '
-                      : ''}
-                    {ev.title}
-                  </div>
-                ))
-              )}
-              {byDay[idx].length > 3 && (
-                <div className="text-[11px] text-blue-600">+ {byDay[idx].length - 3} more</div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 text-xs text-gray-500">
-        (Mini view is read-only. Add or edit items in the Calendar tab.)
-      </div>
-    </div>
-  );
-}
-
-// -------- Big grid quick links
-function QuickBlocks() {
-  // Adjust these targets to match your app
-  const items = [
-    {
-      title: 'Capability Statement',
-      desc: 'Open your latest one-pager',
-      href: '/capability-statement.pdf', // put the PDF in /public/
-      external: false,
-      bg: 'bg-indigo-600',
-    },
-    {
-      title: 'Proposal Template',
-      desc: 'Start a new proposal draft',
-      href: '/proposal-template', // create this page/route later
-      external: false,
-      bg: 'bg-emerald-600',
-    },
-  ];
-
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {items.map((it) => (
-        <a
-          key={it.title}
-          href={it.href}
-          target={it.external ? '_blank' : undefined}
-          rel={it.external ? 'noopener noreferrer' : undefined}
-          className={`${it.bg} rounded-xl p-5 text-white hover:opacity-95 transition block`}
-        >
-          <div className="text-lg font-semibold">{it.title}</div>
-          <div className="text-sm opacity-90">{it.desc}</div>
-        </a>
-      ))}
-    </div>
-  );
-}
 
 export default function Dashboard() {
-  // Persist active tab across refreshes
   const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window === 'undefined') return 'dashboard';
+    // Preserve last active tab across refresh
     return localStorage.getItem('activeTab') || 'dashboard';
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('activeTab', activeTab);
-    } catch {}
+    // Store active tab in localStorage
+    localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
-  const TabButton = ({ id, label }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`px-4 py-2 rounded ${
-        activeTab === id
-          ? 'bg-blue-600 text-white'
-          : 'bg-white text-black border border-gray-300 hover:bg-gray-100'
-      }`}
-    >
-      {label}
-    </button>
-  );
+  useEffect(() => {
+    // Ensure user is logged in before showing dashboard
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
+      window.location.href = '/login';
+    }
+  }, []);
 
-  const renderTabContent = () => {
+  const renderTab = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return (
-          <div className="p-4 space-y-4">
-            {/* Row 1: Quick blocks */}
-            <QuickBlocks />
-
-            {/* Row 2: Mini week calendar */}
-            <MiniWeek />
-          </div>
-        );
       case 'calendar':
-        return (
-          <div className="p-4">
-            <MyCalendar />
-          </div>
-        );
-      case 'contacts':
-        return (
-          <div className="p-4">
-            <Contacts />
-          </div>
-        );
-      case 'info':
-        return (
-          <div className="p-4">
-            <Info />
-          </div>
-        );
-      case 'sources':
-        return (
-          <div className="p-4">
-            <Sources />
-          </div>
-        );
+        return <Calendar />;
       case 'contracts':
-        return (
-          <div className="p-4">
-            <Contracts />
-          </div>
-        );
+        return <Contracts />;
+      case 'contacts':
+        return <Contacts />;
+      case 'info':
+        return <Info />;
+      case 'sources':
+        return <Sources />;
+      case 'bookmarks':
+        return <Bookmarks />;
+      case 'proposals':
+        return <Proposals />;
       case 'roza':
+        return <RozaAssistant />;
+      default:
         return (
-          <div className="p-4">
-            <RozaAssistant />
+          <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Welcome to ROZA</h1>
+            <p>Select a tab to get started.</p>
           </div>
         );
-      default:
-        return <div className="p-4">Select a tab</div>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
-      <h1 className="text-2xl font-bold p-4">ROZA Dashboard</h1>
-
-      {/* Tabs */}
-      <div className="px-4 pb-4 flex flex-wrap gap-2">
-        <TabButton id="dashboard" label="Dashboard" />
-        <TabButton id="calendar"  label="Calendar" />
-        <TabButton id="contacts"  label="Contacts" />
-        <TabButton id="info"      label="Info" />
-        <TabButton id="sources"   label="Sources" />
-        <TabButton id="contracts" label="Contracts" />
-        <TabButton id="roza"      label="ROZA" />
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-900 text-white flex flex-col">
+        <div className="p-4 font-bold text-lg border-b border-gray-700">
+          ROZA Dashboard
+        </div>
+        <nav className="flex-1 p-4 space-y-2">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'dashboard' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'calendar' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Calendar
+          </button>
+          <button
+            onClick={() => setActiveTab('contracts')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'contracts' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Contracts
+          </button>
+          <button
+            onClick={() => setActiveTab('contacts')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'contacts' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Contacts
+          </button>
+          <button
+            onClick={() => setActiveTab('info')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'info' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Info
+          </button>
+          <button
+            onClick={() => setActiveTab('sources')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'sources' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Sources
+          </button>
+          <button
+            onClick={() => setActiveTab('bookmarks')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'bookmarks' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Bookmarks
+          </button>
+          <button
+            onClick={() => setActiveTab('proposals')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'proposals' ? 'bg-gray-700' : ''
+            }`}
+          >
+            Proposals
+          </button>
+          <button
+            onClick={() => setActiveTab('roza')}
+            className={`block w-full text-left p-2 rounded ${
+              activeTab === 'roza' ? 'bg-gray-700' : ''
+            }`}
+          >
+            ROZA AI
+          </button>
+        </nav>
       </div>
 
-      {/* Content */}
-      <div className="px-4 pb-8">{renderTabContent()}</div>
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">{renderTab()}</div>
     </div>
   );
 }
