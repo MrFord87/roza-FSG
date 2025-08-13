@@ -1,94 +1,127 @@
-// components/calendar.js
-import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
+// components/Calendar.js
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Calendar as RBC, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const localizer = momentLocalizer(moment);
+const safeGet = (k, f) => { if (typeof window === 'undefined') return f; try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : f; } catch { return f; } };
+const safeSet = (k, v) => { if (typeof window === 'undefined') return; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
-export default function Calendar() {
-  const [events, setEvents] = useState(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const raw = localStorage.getItem('roza_events');
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+export default function MyCalendar() {
+  const [events, setEvents] = useState([]);
+  const [draft, setDraft] = useState({ open: false, start: null, end: null, text: '' });
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('roza_events', JSON.stringify(events));
-    } catch {}
-  }, [events]);
+  useEffect(() => setEvents(safeGet('roza_calendar_events', [])), []);
+  useEffect(() => safeSet('roza_calendar_events', events), [events]);
 
-  // Add event on slot select; simple prompt to keep it moving
-  const onSelectSlot = ({ start, end }) => {
-    const title = window.prompt('Add note / title for this time:');
+  const onSelectSlot = useCallback(({ start, end }) => {
+    // Open a simple inline editor at the top
+    setDraft({ open: true, start, end, text: '' });
+  }, []);
+
+  const addEvent = () => {
+    const title = draft.text.trim();
     if (!title) return;
-    setEvents(prev => [...prev, { id: Date.now(), title, start, end, status: 'open' }]);
+    const newEvent = {
+      id: crypto.randomUUID(),
+      title,
+      start: draft.start,
+      end: draft.end,
+      completed: false,
+    };
+    setEvents([newEvent, ...events]);
+    setDraft({ open: false, start: null, end: null, text: '' });
   };
 
-  // Edit / complete / delete on event click
-  const onSelectEvent = evt => {
-    const action = window.prompt(
-      `Event: ${evt.title}\n\nType one of: edit | done | delete`,
-      'edit'
-    );
-    if (!action) return;
-
-    if (action.toLowerCase() === 'edit') {
-      const newTitle = window.prompt('New title:', evt.title);
-      if (!newTitle) return;
-      setEvents(prev => prev.map(e => (e.id === evt.id ? { ...e, title: newTitle } : e)));
-    } else if (action.toLowerCase() === 'done') {
-      setEvents(prev => prev.map(e => (e.id === evt.id ? { ...e, status: 'done' } : e)));
-    } else if (action.toLowerCase() === 'delete') {
-      setEvents(prev => prev.filter(e => e.id !== evt.id));
-    }
+  const deleteEvent = (id) => {
+    if (!window.confirm('Delete this event?')) return;
+    setEvents(events.filter((e) => e.id !== id));
   };
 
-  const eventPropGetter = useMemo(
-    () => (event) => {
-      const base = { style: {} };
-      if (event.status === 'done') {
-        base.style.backgroundColor = '#16a34a'; // green
-        base.style.border = '1px solid #0f5132';
-        base.style.opacity = 0.85;
-      } else {
-        base.style.backgroundColor = '#2563eb'; // blue
-        base.style.border = '1px solid #1e40af';
-      }
-      base.style.color = 'white';
-      return base;
-    },
+  const toggleComplete = (id) => {
+    setEvents(events.map((e) => (e.id === id ? { ...e, completed: !e.completed } : e)));
+  };
+
+  const editEvent = (id) => {
+    const existing = events.find((e) => e.id === id);
+    const next = window.prompt('Update note text:', existing?.title || '');
+    if (next == null) return;
+    setEvents(events.map((e) => (e.id === id ? { ...e, title: next.trim() } : e)));
+  };
+
+  const eventPropGetter = useCallback(
+    (event) => ({
+      style: {
+        backgroundColor: event.completed ? '#16a34a' : '#2563eb',
+        border: 0,
+        color: '#fff',
+        opacity: 0.9,
+      },
+      className: event.completed ? 'line-through' : '',
+    }),
     []
   );
 
+  const components = useMemo(
+    () => ({
+      event: ({ event }) => (
+        <div className="flex flex-col">
+          <div className="font-medium">{event.title}</div>
+          <div className="mt-1 flex gap-1">
+            <button onClick={() => toggleComplete(event.id)} className="text-xs px-1 rounded bg-white text-black">
+              {event.completed ? 'Uncomplete' : 'Complete'}
+            </button>
+            <button onClick={() => editEvent(event.id)} className="text-xs px-1 rounded bg-white text-black">
+              Edit
+            </button>
+            <button onClick={() => deleteEvent(event.id)} className="text-xs px-1 rounded bg-white text-red-600">
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+    }),
+    [events]
+  );
+
   return (
-    <div className="min-h-[75vh]">
-      <h2 className="text-2xl font-bold mb-3">ROZA Calendar</h2>
-      <BigCalendar
+    <div style={{ height: '80vh', padding: '1rem' }}>
+      <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>ROZA Calendar</h1>
+
+      {draft.open && (
+        <div style={{ border: '1px solid #ddd', padding: '0.75rem', borderRadius: 8, marginBottom: '0.75rem' }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>
+            Add Note for {moment(draft.start).format('MMM D, YYYY, h:mm A')}
+          </div>
+          <input
+            type="text"
+            value={draft.text}
+            onChange={(e) => setDraft((d) => ({ ...d, text: e.target.value }))}
+            placeholder="Type your note…"
+            style={{ width: '100%', border: '1px solid #ccc', padding: 8, color: '#000' }}
+          />
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button onClick={() => setDraft({ open: false, start: null, end: null, text: '' })}>Cancel</button>
+            <button onClick={addEvent} style={{ backgroundColor: '#2563eb', color: '#fff', padding: '4px 8px', borderRadius: 6 }}>
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+
+      <RBC
         localizer={localizer}
         events={events}
         startAccessor="start"
         endAccessor="end"
+        defaultView="week"
+        views={['day', 'week', 'month']}
         selectable
         onSelectSlot={onSelectSlot}
-        onSelectEvent={onSelectEvent}
-        views={['month', 'week', 'day', 'agenda']}
-        defaultView="month"
-        step={30}
-        timeslots={2}
-        popup
-        style={{ height: '70vh', background: 'white' }}
         eventPropGetter={eventPropGetter}
+        style={{ height: '100%' }}
       />
-      <p className="text-sm text-gray-600 mt-2">
-        Tip: Click/drag on the calendar to create an entry. Click an entry to edit, mark done, or
-        delete. Entries are saved to your browser (localStorage).
-      </p>
     </div>
   );
 }
