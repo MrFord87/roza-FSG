@@ -2,10 +2,6 @@ import React, { useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 
-// If you already import these in pages/_app.js, remove them here.
-import '@fullcalendar/core/index.css';
-import '@fullcalendar/daygrid/index.css';
-
 export default function MiniWeek({ onOpenCalendar }) {
   // Load events saved by your main calendar
   const events = useMemo(() => {
