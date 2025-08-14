@@ -1,76 +1,100 @@
-// components/MiniWeekLite.js
-import React, { useMemo } from 'react';
+// components/MiniWeek.js
+import React, { useMemo, useEffect, useState } from 'react';
 
-function startOfWeek(d) {
-  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const dow = x.getDay(); // 0 Sun .. 6 Sat
-  x.setDate(x.getDate() - dow); // start Sunday; change to 1..7 if you want Mon start
-  x.setHours(0,0,0,0);
-  return x;
+function startOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay();            // 0 = Sun
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - day);      // back to Sunday
+  return d;
 }
-function ymd(d) { return d.toISOString().slice(0,10); }
+function fmtYMD(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function dowShort(d) {
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+}
 
-export default function MiniWeekLite({ onOpenCalendar }) {
-  // pull events you already save in localStorage (adjust key/shape if needed)
-  let events = [];
-  try {
-    const raw = localStorage.getItem('rozaCalendarEvents');
-    if (raw) events = JSON.parse(raw);
-  } catch {}
+export default function MiniWeek({ onOpenCalendar }) {
+  const [events, setEvents] = useState([]);
 
-  // group events by date string (YYYY-MM-DD)
-  const byDate = useMemo(() => {
+  // Pull events the same way the main calendar saves them
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('rozaCalendarEvents') || '[]';
+      setEvents(JSON.parse(raw));
+    } catch {
+      setEvents([]);
+    }
+  }, []);
+
+  // Build the 7 days for the current week (Sun-Sat containing today)
+  const days = useMemo(() => {
+    const sun = startOfWeek(new Date());
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(sun);
+      d.setDate(sun.getDate() + i);
+      return d;
+    });
+  }, []);
+
+  // Index events by YYYY-MM-DD for quick lookup
+  const eventsByDate = useMemo(() => {
     const map = {};
-    for (const e of events) {
-      // expect event like { id, date: 'YYYY-MM-DD', title, notes }
-      const k = e.date || (e.start && e.start.slice(0,10));
-      if (!k) continue;
-      (map[k] ||= []).push(e);
+    for (const ev of events) {
+      // tolerate different shapes: {date:'2025-08-13'} or {start:'2025-08-13T10:00'}
+      const key = (ev.date || ev.start || '').slice(0, 10);
+      if (!key) continue;
+      (map[key] ||= []).push(ev);
     }
     return map;
   }, [events]);
 
-  const today = new Date();
-  const weekStart = startOfWeek(today);
-  const days = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
-    return d;
-  });
-
   return (
-    <div className="w-full border border-gray-300 rounded-md overflow-hidden">
-      {/* single-row week grid (no extra day-name list above) */}
-      <div className="grid grid-cols-7">
-        {days.map((d) => {
-          const key = ymd(d);
-          const list = byDate[key] || [];
-          const isToday = key === ymd(today);
-          return (
-            <button
-              key={key}
-              className={`h-40 w-full p-2 text-left border-r border-b border-gray-200 focus:outline-none hover:bg-gray-50
-                ${isToday ? 'bg-blue-50 ring-1 ring-blue-300' : ''}`}
-              onClick={() => onOpenCalendar?.(d)}
-              title="Open full calendar"
-            >
-              <div className="text-xs text-gray-500">
-                {d.toLocaleDateString(undefined, { weekday: 'short' })} {d.getDate()}
+    <div className="grid grid-cols-7 gap-2">
+      {days.map((d) => {
+        const key = fmtYMD(d);
+        const todays = eventsByDate[key] || [];
+        return (
+          <button
+            key={key}
+            onClick={() => onOpenCalendar?.(d)}
+            className="
+              text-left border border-gray-300 rounded-md p-2 bg-white
+              hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500
+            "
+          >
+            <div className="flex items-baseline justify-between">
+              <span className="text-xs text-gray-500">{dowShort(d)}</span>
+              <span className="text-sm font-semibold">{d.getDate()}</span>
+            </div>
+
+            {todays.length === 0 ? (
+              <div className="mt-2 h-16 text-xs text-gray-400">
+                {/* empty slot for consistent height */}
               </div>
-              <div className="mt-1 space-y-1">
-                {list.slice(0,3).map((e) => (
-                  <div key={e.id || e.title} className="text-xs truncate px-2 py-1 rounded bg-gray-100">
-                    {e.title || e.notes || '(untitled)'}
-                  </div>
+            ) : (
+              <ul className="mt-2 space-y-1 max-h-24 overflow-auto pr-1">
+                {todays.slice(0, 4).map((ev, i) => (
+                  <li
+                    key={i}
+                    className="text-xs bg-gray-100 border border-gray-200 rounded px-1 py-0.5 truncate"
+                    title={ev.title || ev.name || ''}
+                  >
+                    {ev.title || ev.name || 'Untitled'}
+                  </li>
                 ))}
-                {list.length > 3 && (
-                  <div className="text-[10px] text-gray-500">+{list.length - 3} more…</div>
+                {todays.length > 4 && (
+                  <li className="text-[10px] text-gray-500">+{todays.length - 4} more</li>
                 )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              </ul>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
