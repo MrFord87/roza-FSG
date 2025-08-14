@@ -1,28 +1,59 @@
 // pages/api/naics.js
-// Fast NAICS search: LOCAL-FIRST (instant), then short-timeout upstream fallback
+import fs from 'fs';
+import path from 'path';
 
-// ── 1) LOCAL DATA ───────────────────────────────────────────────────────────
-// Replace the sample below with YOUR full dataset (array of objects).
-const LOCALS = [
-  { code: '561612', title: 'Security Guards and Patrol Services', desc: 'Armed/unarmed guards, patrols, protective services.', index: ['guard','patrol','security'] },
-  { code: '561720', title: 'Janitorial Services', desc: 'Interior cleaning, custodial services.', index: ['cleaning','custodial','janitor'] },
-  { code: '541611', title: 'Admin & General Management Consulting', desc: 'Org planning & management consulting.', index: ['admin','management','consulting'] },
-  { code: '541512', title: 'Computer Systems Design Services', desc: 'IT systems design/integration.', index: ['it','systems','integration','software'] },
-  { code: '236220', title: 'Commercial & Institutional Building Construction', desc: 'Nonresidential building construction.', index: ['construction','commercial','build'] },
+// ---------- load big local dataset if present ----------
+let BIG = [];
+let LOAD_NOTE = '';
+
+function tryLoadJSON() {
+  const candidates = [
+    path.join(process.cwd(), 'public', 'naics-local.json'),
+    path.join(process.cwd(), 'naics-local.json'),                // just in case
+    path.join(__dirname || '.', '../../public/naics-local.json') // SSR path variance
+  ];
+  for (const fp of candidates) {
+    try {
+      if (fs.existsSync(fp)) {
+        const raw = fs.readFileSync(fp, 'utf8');
+        const data = JSON.parse(raw); // will throw if invalid
+        if (Array.isArray(data)) {
+          BIG = data;
+          LOAD_NOTE = `loaded:${fp}`;
+          return;
+        }
+      }
+    } catch (e) {
+      LOAD_NOTE = `error:${e?.message || String(e)}`;
+      // keep trying other paths
+    }
+  }
+  if (!LOAD_NOTE) LOAD_NOTE = 'not_found';
+}
+tryLoadJSON();
+
+// ---------- small in-file fallback ----------
+const FALLBACK = [
   { code: '238160', title: 'Roofing Contractors', desc: 'Roofing, reroofing, roof repair; flashing & gutters.', index: ['roof','roofing','reroof'] },
-  // …PASTE YOUR FULL LIST HERE…
+  { code: '238220', title: 'Plumbing, Heating, and Air-Conditioning Contractors', desc: 'Plumbing, HVAC and related services.', index: ['plumbing','hvac','mechanical'] },
+  { code: '238210', title: 'Electrical Contractors and Other Wiring Installation Contractors', desc: 'Electrical wiring and installations; low voltage; alarms.', index: ['electrical','wiring','alarm'] },
+  { code: '236220', title: 'Commercial and Institutional Building Construction', desc: 'Nonresidential building construction; general contractors.', index: ['construction','building'] },
+  { code: '541512', title: 'Computer Systems Design Services', desc: 'IT systems design, integration, implementation.', index: ['it','systems','integration'] },
+  { code: '541611', title: 'Administrative Management and General Management Consulting Services', desc: 'Strategy, process improvement, admin mgmt.', index: ['management consulting','bpi','strategy'] },
+  { code: '561612', title: 'Security Guards and Patrol Services', desc: 'Armed/unarmed guards, patrol, protective services.', index: ['security','guard','patrol'] },
+  { code: '561720', title: 'Janitorial Services', desc: 'Custodial, commercial cleaning, interior janitorial.', index: ['cleaning','custodial','janitor'] }
 ];
 
-// ── 2) HELPERS ──────────────────────────────────────────────────────────────
+// ---------- helpers ----------
 const safe = (v) => String(v ?? '').toLowerCase();
 
 const normalize = (rows = []) =>
   rows
     .map((r) => {
-      const code = safe(r.code || r.naics_code || r.NaicsCode || r.naics);
+      const code  = safe(r.code || r.naics_code || r.NaicsCode || r.naics);
       const title = safe(r.title || r.NaicsTitle || r.name || r.description);
-      const desc = safe(r.desc || r.definition || r.Definition || r.summary || r.description);
-      let index = r.index || r.keywords || r.search_terms || r.terms || [];
+      const desc  = safe(r.desc || r.definition || r.Definition || r.summary || r.description);
+      let index   = r.index || r.keywords || r.search_terms || r.terms || [];
       if (!Array.isArray(index)) index = [String(index || '')];
       index = index.map(safe);
       return code && title ? { code, title, desc, index } : null;
@@ -30,98 +61,42 @@ const normalize = (rows = []) =>
     .filter(Boolean);
 
 const score = (row, q) => {
-  if (!q) return 0;
   const terms = q.split(/\s+/).filter(Boolean);
   let s = 0;
   for (const t of terms) {
-    if (row.code === t) s += 30;           // exact code
+    if (row.code === t) s += 40;
+    else if (row.code.startsWith(t)) s += 20;
     else if (row.code.includes(t)) s += 10;
 
-    if (row.title.includes(t)) s += 12;    // title
-    if (row.desc?.includes(t)) s += 5;     // description
-    if (row.index?.some((i) => i.includes(t))) s += 4; // index terms
+    if (row.title.includes(t)) s += 12;
+    if (row.desc?.includes(t)) s += 5;
+    if (row.index?.some((i) => i.includes(t))) s += 4;
   }
   return s;
 };
 
 const filterAndRank = (rows, q, limit = 25) => {
+  const norm = normalize(rows);
   if (!q) return [];
-  return rows
-    .map((r) => ({ r, s: score(r, q) }))
+  const qq = safe(q);
+  return norm
+    .map((r) => ({ r, s: score(r, qq) }))
     .filter(({ s }) => s > 0)
-    .sort((a, b) => b.s - a.s)
+    .sort((a, b) => b.s - a.s || a.r.code.localeCompare(b.r.code))
     .slice(0, limit)
     .map(({ r }) => r);
 };
 
-// ── 3) UPSTREAM (short timeout, only if needed) ─────────────────────────────
-const YEARS = ['2012', '2007'];
-const BASES = [
-  (year, q) => `https://api.naics.us/v0/q?year=${year}&terms=${encodeURIComponent(q)}`,
-  (year, q) => `https://api.naics.us/v0/q?year=${year}&code=${encodeURIComponent(q)}`,
-];
-
-async function fetchWithTimeout(url, ms = 1500) {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    const res = await fetch(url, { headers: { accept: 'application/json' }, signal: ctrl.signal, next: { revalidate: 0 } });
-    return res;
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-async function tryUpstream(term) {
-  for (const build of BASES) {
-    for (const year of YEARS) {
-      const url = build(year, term);
-      try {
-        const r = await fetchWithTimeout(url, 1500);
-        if (!r.ok) continue;
-        const data = await r.json().catch(() => null);
-        const rows = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
-        const normalized = normalize(rows);
-        if (normalized.length) return normalized;
-      } catch {
-        // ignore and try next
-      }
-    }
-  }
-  return null;
-}
-
-// ── 4) HANDLER ──────────────────────────────────────────────────────────────
-export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+// ---------- API handler ----------
+export default function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const q = safe(req.query.q || '').trim();
-  if (!q) {
-    res.status(200).json({ results: [] });
-    return;
-  }
+  const rows = (BIG && BIG.length) ? BIG : FALLBACK;
+  const source = (BIG && BIG.length) ? 'BIG' : 'FALLBACK';
 
-  try {
-    // Local first: instant results
-    const localRows = normalize(LOCALS);
-    let results = filterAndRank(localRows, q);
-    if (results.length) {
-      res.status(200).json({ results });
-      return;
-    }
+  const results = q ? filterAndRank(rows, q) : [];
 
-    // If local had nothing, try the demo API quickly
-    const netRows = await tryUpstream(q);
-    if (netRows?.length) {
-      results = filterAndRank(netRows, q);
-    }
-
-    res.status(200).json({ results });
-  } catch {
-    // absolute fallback: empty array (or return top locals if you prefer)
-    res.status(200).json({ results: [] });
-  }
+  // Include a small debug hint so you can see what it used
+  res.status(200).json({ results, source, note: LOAD_NOTE });
 }
