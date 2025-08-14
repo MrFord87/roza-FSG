@@ -7,7 +7,7 @@ import Contracts from '../components/Contracts';
 import Contacts from '../components/Contacts';
 import Info from '../components/Info';
 import Sources from '../components/Sources';
-import MiniWeek from '../components/MiniWeek';
+import MiniWeekLite from '../components/MiniWeekLite';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -44,7 +44,7 @@ export default function Dashboard() {
         return (
           <div className="p-4">
           <h2 className="text-xl font-semibold mb-2">This Week</h2>
-        <MiniWeek
+        <MiniWeekLite
           onOpencalendar={(date) => {
             try {
              localStorage.setItem('rozaCalendarFocusDate',date.toISOString());
