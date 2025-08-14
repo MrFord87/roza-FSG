@@ -1,0 +1,363 @@
+[
+  {
+    "code": "111110",
+    "title": "Soybean Farming",
+    "desc": "Farms primarily engaged in growing soybeans.",
+    "index": ["soybean", "soy"]
+  },
+  {
+    "code": "111120",
+    "title": "Oilseed (except Soybean) Farming",
+    "desc": "Farms growing oilseed and grain nec.",
+    "index": ["oilseed", "flaxseed", "canola"]
+  },
+  {
+    "code": "111130",
+    "title": "Dry Pea and Bean Farming",
+    "desc": "Farms growing dry peas, beans.",
+    "index": ["dry pea", "bean"]
+  },
+  {
+    "code": "111140",
+    "title": "Wheat Farming",
+    "desc": "Farms growing wheat.",
+    "index": ["wheat", "grain"]
+  },
+  {
+    "code": "111150",
+    "title": "Corn Farming",
+    "desc": "Farms growing corn.",
+    "index": ["corn", "maize"]
+  },
+  {
+    "code": "111160",
+    "title": "Rice Farming",
+    "desc": "Farms growing rice.",
+    "index": ["rice"]
+  },
+  {
+    "code": "111191",
+    "title": "Oilseed and Grain Combination Farming",
+    "desc": "Establishments engaged in multiple oilseed and grain farming.",
+    "index": ["combination", "mixed grain"]
+  },
+  {
+    "code": "111199",
+    "title": "All Other Grain Farming",
+    "desc": "Farms growing other grains nec.",
+    "index": ["other grain"]
+  },
+  {
+    "code": "111211",
+    "title": "Potato Farming",
+    "desc": "Farms growing potatoes.",
+    "index": ["potato"]
+  },
+  {
+    "code": "111219",
+    "title": "Other Vegetable (except Potato) and Melon Farming",
+    "desc": "Farms growing vegetables and melons.",
+    "index": ["vegetable", "melon"]
+  },
+  {
+    "code": "111310",
+    "title": "Orange Groves",
+    "desc": "Farms growing oranges.",
+    "index": ["orange"]
+  },
+  {
+    "code": "111320",
+    "title": "Citrus (except Orange) Groves",
+    "desc": "Farms growing other citrus fruits.",
+    "index": ["citrus", "grapefruit", "lemon"]
+  },
+  {
+    "code": "111331",
+    "title": "Apple Orchards",
+    "desc": "Farms growing apples.",
+    "index": ["apple"]
+  },
+  {
+    "code": "111332",
+    "title": "Grape Vineyards",
+    "desc": "Farms growing grapes.",
+    "index": ["grape", "vineyard"]
+  },
+  {
+    "code": "111333",
+    "title": "Strawberry Farming",
+    "desc": "Farms growing strawberries.",
+    "index": ["strawberry"]
+  },
+  {
+    "code": "111334",
+    "title": "Berry (except Strawberry) Farming",
+    "desc": "Farms growing other berries.",
+    "index": ["berry", "blueberry", "raspberry"]
+  },
+  {
+    "code": "111335",
+    "title": "Tree Nut Farming",
+    "desc": "Farms growing tree nuts.",
+    "index": ["nut", "almond", "walnut"]
+  },
+  {
+    "code": "111336",
+    "title": "Fruit and Tree Nut Combination Farming",
+    "desc": "Farms growing fruit and tree nuts.",
+    "index": ["fruit nut", "combo"]
+  },
+  {
+    "code": "111339",
+    "title": "Other Noncitrus Fruit Farming",
+    "desc": "Farms growing noncitrus fruits nec.",
+    "index": ["noncitrus fruit"]
+  },
+  {
+    "code": "111411",
+    "title": "Mushroom Production",
+    "desc": "Establishments growing mushrooms.",
+    "index": ["mushroom"]
+  },
+  {
+    "code": "111419",
+    "title": "Other Food Crops Grown Under Cover",
+    "desc": "Farms growing foods under cover.",
+    "index": ["greenhouse food"]
+  },
+  {
+    "code": "111421",
+    "title": "Nursery and Floriculture Production (Outdoors)",
+    "desc": "Sale of ornamental nursery products outdoors.",
+    "index": ["nursery", "floriculture"]
+  },
+  {
+    "code": "111422",
+    "title": "Nursery and Floriculture Production (Under Cover)",
+    "desc": "Sale of ornamental nursery products under cover.",
+    "index": ["nursery indoor", "greenhouse"]
+  },
+  {
+    "code": "111910",
+    "title": "Tobacco Farming",
+    "desc": "Farms growing tobacco.",
+    "index": ["tobacco"]
+  },
+  {
+    "code": "111920",
+    "title": "Cotton Farming",
+    "desc": "Farms growing cotton.",
+    "index": ["cotton"]
+  },
+  {
+    "code": "111930",
+    "title": "Sugarcane Farming",
+    "desc": "Farms growing sugarcane.",
+    "index": ["sugarcane"]
+  },
+  {
+    "code": "111940",
+    "title": "Hay Farming",
+    "desc": "Farms growing hay.",
+    "index": ["hay"]
+  },
+  {
+    "code": "111991",
+    "title": "Sugar Beet Farming",
+    "desc": "Farms growing sugar beets.",
+    "index": ["sugar beet"]
+  },
+  {
+    "code": "111992",
+    "title": "Peanut Farming",
+    "desc": "Farms growing peanuts.",
+    "index": ["peanut"]
+  },
+  {
+    "code": "111998",
+    "title": "All Other Miscellaneous Crop Farming",
+    "desc": "Farms growing other now-defined crops.",
+    "index": ["misc crop"]
+  },
+  {
+    "code": "112111",
+    "title": "Beef Cattle Ranching and Farming, including Feedlots",
+    "desc": "Raising beef cattle for meat.",
+    "index": ["beef", "cattle", "feedlot"]
+  },
+  {
+    "code": "112112",
+    "title": "Cattle Feedlots",
+    "desc": "Grow cattle exclusively for feeding.",
+    "index": ["feedlot"]
+  },
+  {
+    "code": "112120",
+    "title": "Dairy Cattle and Milk Production",
+    "desc": "Raising dairy cattle, milk production.",
+    "index": ["dairy", "milk"]
+  },
+  [
+  {
+    "code": "238160",
+    "title": "Roofing Contractors",
+    "desc": "Installing and repairing roofs.",
+    "index": []
+  },
+  {
+    "code": "236220",
+    "title": "Commercial and Institutional Building Construction",
+    "desc": "Nonresidential building construction",
+    "index": []
+  },
+  {
+    "code": "238160",
+    "title": "Roofing Contractors",
+    "desc": "Roofing, reroofing, roof repair, flashing",
+    "index": []
+  },
+  {
+    "code": "238210",
+    "title": "Electrical Contractors and Other Wiring Installation Contractors",
+    "desc": "Electrical wiring and equipment installation",
+    "index": []
+  },
+  {
+    "code": "238220",
+    "title": "Plumbing, Heating, and Air-Conditioning Contractors",
+    "desc": "Plumbing, HVAC, mechanical systems",
+    "index": []
+  },
+  {
+    "code": "238320",
+    "title": "Painting and Wall Covering Contractors",
+    "desc": "Interior/exterior painting and wall covering",
+    "index": []
+  },
+  {
+    "code": "238310",
+    "title": "Drywall and Insulation Contractors",
+    "desc": "Drywall, plastering, insulation installation",
+    "index": []
+  },
+  {
+    "code": "238330",
+    "title": "Flooring Contractors",
+    "desc": "Floor laying and other floor work",
+    "index": []
+  },
+  {
+    "code": "238340",
+    "title": "Tile and Terrazzo Contractors",
+    "desc": "Ceramic/stone tile and terrazzo installation",
+    "index": []
+  },
+  {
+    "code": "238350",
+    "title": "Finish Carpentry Contractors",
+    "desc": "Trim, finish carpentry, cabinetry",
+    "index": []
+  },
+  {
+    "code": "238910",
+    "title": "Site Preparation Contractors",
+    "desc": "Excavation, grading, demolition, land clearing",
+    "index": []
+  },
+  {
+    "code": "238990",
+    "title": "All Other Specialty Trade Contractors",
+    "desc": "Specialty trade work not elsewhere classified",
+    "index": []
+  },
+  {
+    "code": "423430",
+    "title": "Computer and Computer Peripheral Equipment and Software Merchant Wholesalers",
+    "desc": "IT equipment and software wholesaling",
+    "index": []
+  },
+  {
+    "code": "424120",
+    "title": "Stationery and Office Supplies Merchant Wholesalers",
+    "desc": "Office supplies distribution",
+    "index": []
+  },
+  {
+    "code": "484110",
+    "title": "General Freight Trucking, Local",
+    "desc": "Local freight; short-haul trucking",
+    "index": []
+  },
+  {
+    "code": "488510",
+    "title": "Freight Transportation Arrangement",
+    "desc": "Third-party logistics (3PL), freight brokerage",
+    "index": []
+  },
+  {
+    "code": "493110",
+    "title": "General Warehousing and Storage",
+    "desc": "Warehousing, storage, distribution centers",
+    "index": []
+  },
+  {
+    "code": "518210",
+    "title": "Computing Infrastructure Providers, Data Processing, Web Hosting",
+    "desc": "Hosting, cloud infrastructure, data processing",
+    "index": []
+  },
+  {
+    "code": "519290",
+    "title": "Web Search Portals and All Other Information Services",
+    "desc": "Directories, information services, portals",
+    "index": []
+  },
+  {
+    "code": "541330",
+    "title": "Engineering Services",
+    "desc": "Civil, mechanical, electrical, and other engineering services",
+    "index": []
+  },
+  {
+    "code": "541370",
+    "title": "Surveying and Mapping (except Geophysical) Services",
+    "desc": "Land surveying, mapping, GIS",
+    "index": []
+  },
+  {
+    "code": "541511",
+    "title": "Custom Computer Programming Services",
+    "desc": "Custom software development",
+    "index": []
+  },
+  {
+    "code": "541512",
+    "title": "Computer Systems Design Services",
+    "desc": "IT systems design, integration, implementation",
+    "index": []
+  },
+  {
+    "code": "541513",
+    "title": "Computer Facilities Management Services",
+    "desc": "Managed services, IT outsourcing (MSP)",
+    "index": []
+  },
+  {
+    "code": "541519",
+    "title": "Other Computer Related Services",
+    "desc": "Cybersecurity, IT support not classified elsewhere",
+    "index": []
+  },
+  {
+    "code": "541611",
+    "title": "Administrative Management and General Management Consulting Services",
+    "desc": "Org planning, strategy, business process improvement",
+    "index": []
+  },
+  {
+    "code": "541612",
+    "title": "Human Resources Consulting Services",
+    "desc": "HR consulting, staffing strategy",
+    "index": []
+  }
+]
