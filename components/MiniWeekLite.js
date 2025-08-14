@@ -1,123 +1,148 @@
 // components/MiniWeek.js
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
-const EVENTS_KEY = 'rozaCalendarEvents'; // same key your main calendar uses
+// Keys we already use elsewhere
+const EVENTS_KEY = 'rozaCalendarEvents';
+const FOCUS_KEY  = 'rozaCalendarFocusDate';
 
 function startOfWeek(d) {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = x.getDay();          // 0=Sun
-  x.setDate(x.getDate() - day);    // go back to Sunday
+  const day = x.getDay();             // 0 = Sun .. 6 = Sat
+  x.setDate(x.getDate() - day);       // back to Sunday
   x.setHours(0, 0, 0, 0);
   return x;
 }
-function endOfDay(d) {
+function addDays(d, n) {
   const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
+  x.setDate(x.getDate() + n);
   return x;
 }
-function ymd(date) {
-  return date.toISOString().slice(0, 10); // YYYY-MM-DD
+function fmtRangeLabel(sun, sat) {
+  const opts = { month: 'short', day: 'numeric' };
+  const left  = sun.toLocaleDateString(undefined, opts);
+  const right = sat.toLocaleDateString(undefined, opts);
+  return `Week of ${left} – ${right}`;
+}
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
 }
 
-function readEvents() {
-  try {
-    const raw = localStorage.getItem(EVENTS_KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    // normalize to { title, start, end?, allDay? }
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
+// light, optional color tags by event.type
+const typeChip = (type) => {
+  if (!type) return '';
+  const map = {
+    meeting: 'bg-blue-100 text-blue-700',
+    deadline: 'bg-red-100 text-red-700',
+    task: 'bg-amber-100 text-amber-700',
+  };
+  return map[type?.toLowerCase()] || 'bg-gray-100 text-gray-700';
+};
 
 export default function MiniWeek({ onOpenCalendar }) {
-  // compute week range (this Sunday → Saturday)
-  const days = useMemo(() => {
-    const start = startOfWeek(new Date());
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return d;
-    });
+  const [events, setEvents] = useState([]);
+
+  // load events saved by your main Calendar (localStorage)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(EVENTS_KEY);
+      if (raw) setEvents(JSON.parse(raw));
+    } catch {
+      setEvents([]);
+    }
   }, []);
 
-  // collect events for this week
-  const eventsByDay = useMemo(() => {
-    const all = readEvents();
-    const map = {};
-    for (const d of days) map[ymd(d)] = [];
+  const week = useMemo(() => {
+    const today = new Date();
+    const sun = startOfWeek(today);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(sun, i));
+    return { sun, days, sat: addDays(sun, 6) };
+  }, []);
 
-    for (const ev of all) {
-      if (!ev || !ev.start) continue;
-      const s = new Date(ev.start);
-      const e = ev.end ? new Date(ev.end) : endOfDay(s);
-      // For each day in our week, include the event if it overlaps the day
-      for (const d of days) {
-        const ds = d;              // start of that day
-        const de = endOfDay(d);    // end of that day
-        if (e >= ds && s <= de) {
-          map[ymd(d)].push(ev);
+  // bucket events by day (expects items shaped like { date:'YYYY-MM-DD', title, type })
+  const byDay = useMemo(() => {
+    const buckets = {};
+    for (const d of week.days) {
+      buckets[d.toDateString()] = [];
+    }
+
+    for (const ev of events || []) {
+      // accept several shapes:
+      // - ev.date (YYYY-MM-DD)
+      // - ev.start (ISO)   -> prefer start
+      // - ev.when          -> fallback
+      const iso = ev.start || ev.date || ev.when;
+      if (!iso) continue;
+      const dt = new Date(iso);
+      for (const d of week.days) {
+        if (sameDay(dt, d)) {
+          buckets[d.toDateString()].push(ev);
+          break;
         }
       }
     }
-    // sort events by start time
-    for (const k of Object.keys(map)) {
-      map[k].sort((a, b) => new Date(a.start) - new Date(b.start));
+    // sort events by time if they have one
+    for (const key of Object.keys(buckets)) {
+      buckets[key].sort((a, b) => String(a.start || a.date || '').localeCompare(String(b.start || b.date || '')));
     }
-    return map;
-  }, [days]);
+    return buckets;
+  }, [events, week.days]);
 
-  const todayYmd = ymd(new Date());
-
-  const handleOpen = (date) => {
+  const handleOpen = (d) => {
     try {
-      localStorage.setItem('rozaCalendarFocusDate', date.toISOString());
+      localStorage.setItem(FOCUS_KEY, d.toISOString());
     } catch {}
-    if (typeof onOpenCalendar === 'function') onOpenCalendar(date);
+    onOpenCalendar?.(d);
   };
 
   return (
-    <div className="miniweek not-prose">
-      {/* one-row, seven-column grid */}
-      <div className="grid grid-cols-7 gap-2">
-        {days.map((date) => {
-          const key = ymd(date);
-          const isToday = key === todayYmd;
-          const evs = eventsByDay[key] || [];
+    <div className="p-4">
+      <div className="text-sm text-gray-500 mb-3">{fmtRangeLabel(week.sun, week.sat)}</div>
+
+      <div className="flex gap-2 overflow-x-auto">
+        {week.days.map((d) => {
+          const key = d.toDateString();
+          const items = byDay[key] || [];
+          const isToday = sameDay(d, new Date());
+
           return (
             <button
               key={key}
-              onClick={() => handleOpen(date)}
+              onClick={() => handleOpen(d)}
               className={[
-                'text-left rounded-md border p-2 bg-white hover:shadow transition',
-                isToday ? 'border-blue-500 ring-1 ring-blue-300' : 'border-gray-300',
+                'min-w-[110px] rounded border px-3 py-2 text-left',
+                isToday ? 'bg-gray-100 border-gray-400' : 'bg-white border-gray-300',
+                'hover:shadow transition'
               ].join(' ')}
+              title="Open in Calendar"
             >
-              {/* day label */}
-              <div className="flex items-baseline justify-between">
-                <div className="text-xs font-medium text-gray-600">
-                  {date.toLocaleDateString(undefined, { weekday: 'short' })}
-                </div>
-                <div className="text-sm font-semibold">{date.getDate()}</div>
+              <div className="text-xs uppercase tracking-wide text-gray-500">
+                {d.toLocaleDateString(undefined, { weekday: 'short' })}
+              </div>
+              <div className="text-sm font-semibold -mt-0.5">
+                {d.toLocaleDateString(undefined, { day: '2-digit' })}
               </div>
 
-              {/* events (first few) */}
               <div className="mt-2 space-y-1">
-                {evs.length === 0 ? (
-                  <div className="text-[11px] text-gray-400 italic">—</div>
+                {items.length === 0 ? (
+                  <div className="text-xs text-gray-400">—</div>
                 ) : (
-                  evs.slice(0, 3).map((ev, i) => (
+                  items.slice(0, 3).map((ev, i) => (
                     <div
                       key={i}
-                      className="text-[11px] leading-snug px-2 py-1 rounded bg-gray-100 text-gray-800"
-                      title={ev.title}
+                      className={[
+                        'text-xs rounded px-2 py-1 border',
+                        'border-gray-200',
+                        typeChip(ev.type)
+                      ].join(' ')}
                     >
-                      {ev.title}
+                      {ev.title || ev.name || ev.text || 'Untitled'}
                     </div>
                   ))
                 )}
-                {evs.length > 3 && (
-                  <div className="text-[11px] text-gray-500">+{evs.length - 3} more…</div>
+                {items.length > 3 && (
+                  <div className="text-[11px] text-gray-500">+{items.length - 3} more…</div>
                 )}
               </div>
             </button>
