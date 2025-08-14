@@ -234,14 +234,36 @@ export default function Info() {
               >
                 Close
               </button>
-              <div className="h-full w-full">
-                {/* Use iframe to render the PDF blob */}
-                <iframe
-                  title={pdfTitle || 'PDF'}
-                  src={pdfBlobUrl}
-                  className="w-full h-full"
-                />
-              </div>
+             <div className="h-full w-full">
+  {/* Prefer <object> for better PDF handling across browsers */}
+  <object
+    data={pdfBlobUrl}
+    type="application/pdf"
+    className="w-full h-full"
+  >
+    {/* Fallback if the browser won’t render the PDF inline */}
+    <div className="p-4 text-sm text-gray-700 space-y-3">
+      <p>Couldn’t display the PDF inline.</p>
+      <div className="flex gap-2">
+        <a
+          href={pdfBlobUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1 rounded bg-blue-600 text-white"
+        >
+          Open in new tab
+        </a>
+        <a
+          href={pdfBlobUrl}
+          download={pdfTitle || 'document.pdf'}
+          className="px-3 py-1 rounded border border-gray-300"
+        >
+          Download
+        </a>
+      </div>
+    </div>
+  </object>
+</div> 
             </div>
           </div>
         )}
