@@ -1,112 +1,128 @@
 // pages/api/naics.js
-// Simple, robust NAICS search with good local fallback + scoring
+// NAICS search with API-first + filtered local fallback + simple scoring
 
-// --- Local fallback (trimmed sample; keep your larger list here)
+// ─── 1) LOCAL DATA (keep your big list here) ────────────────────────────────
+// Replace the small sample below with YOUR full dataset.
+// Format: { code: '561612', title: 'Security Guards and Patrol Services', desc: '...', index?: ['keyword', ...] }
 const LOCALS = [
   { code: '561612', title: 'Security Guards and Patrol Services', desc: 'Armed/unarmed guards, patrols, protective services.', index: ['guard', 'patrol', 'security'] },
   { code: '561720', title: 'Janitorial Services', desc: 'Interior cleaning, custodial services.', index: ['cleaning', 'custodial', 'janitor'] },
   { code: '541611', title: 'Admin & General Management Consulting', desc: 'Org planning and management consulting.', index: ['admin', 'management', 'consulting'] },
-  { code: '541512', title: 'Computer Systems Design Services', desc: 'IT systems planning and integration.', index: ['it', 'systems', 'integration', 'software'] },
+  { code: '541512', title: 'Computer Systems Design Services', desc: 'IT systems design/integration.', index: ['it', 'systems', 'integration', 'software'] },
   { code: '236220', title: 'Commercial & Institutional Building Construction', desc: 'Nonresidential building construction.', index: ['construction', 'commercial', 'build'] },
-  { code: '541330', title: 'Engineering Services', desc: 'Applying physical laws and engineering design.', index: ['engineering', 'design'] },
-  // Add more local rows…
+  { code: '238160', title: 'Roofing Contractors', desc: 'Roofing, reroofing, roof repair, flashing & gutters.', index: ['roof', 'roofing', 'reroof'] },
+  // …paste the rest of your large list here …
 ];
 
-// ---------- helpers
+// ─── 2) HELPERS ─────────────────────────────────────────────────────────────
+const safe = (v) => String(v ?? '').toLowerCase();
+
 const normalize = (rows = []) =>
   rows
     .map((r) => {
-      const code  = String(r.code || r.naics_code || r.NaicsCode || r.naics || '').trim();
-      const title = String(r.title || r.description || r.NaicsTitle || r.name || '').trim();
-      const desc  = String(r.desc || r.definition || r.Definition || r.summary || '').trim();
-      const index = Array.isArray(r.index)
-        ? r.index
-        : r.keywords || r.search_terms || r.terms
-          ? [].concat(r.keywords || r.search_terms || r.terms)
-          : [];
-      return { code, title, desc, index: index.map(String) };
-    })
-    .filter((x) => x.code && x.title);
+      const code = safe(r.code || r.naics_code || r.NaicsCode || r.naics);
+      const title = safe(r.title || r.description || r.NaicsTitle || r.name);
+      const desc =
+        safe(r.desc || r.definition || r.Definition || r.summary || r.description);
+      let index = r.index || r.keywords || r.search_terms || r.terms || [];
+      if (!Array.isArray(index)) index = [String(index || '')];
+      index = index.map(safe);
 
-function filterAndScore(rows, term) {
-  const tokens = term
-    .toLowerCase()
-    .split(/\s+/)
+      return code && title
+        ? { code, title, desc, index }
+        : null;
+    })
     .filter(Boolean);
 
-  return rows
-    .map((r) => {
-      const hay = {
-        code: r.code.toLowerCase(),
-        title: r.title.toLowerCase(),
-        desc: (r.desc || '').toLowerCase(),
-        index: (r.index || []).map((w) => (w || '').toLowerCase()),
-      };
+/** simple score: exact-ish hits weigh more; title > desc > index */
+const score = (row, q) => {
+  if (!q) return 0;
+  const terms = q.split(/\s+/).filter(Boolean);
+  let s = 0;
 
-      // must match ALL tokens somewhere
-      const matchesAll = tokens.every((t) =>
-        hay.code.includes(t) ||
-        hay.title.includes(t) ||
-        hay.desc.includes(t) ||
-        hay.index.some((w) => w.includes(t))
-      );
-      if (!matchesAll) return null;
+  for (const t of terms) {
+    // code
+    if (row.code === t) s += 20;
+    else if (row.code.includes(t)) s += 8;
 
-      // basic scoring: earlier/stronger matches rank higher
-      let score = 0;
-      for (const t of tokens) {
-        if (hay.code.startsWith(t)) score += 4;
-        if (hay.code.includes(t))   score += 3;
-        if (hay.title.includes(t))  score += 2;
-        if (hay.desc.includes(t))   score += 1;
-        if (hay.index.some((w) => w.includes(t))) score += 1;
-      }
-      return { ...r, _score: score };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b._score - a._score);
-}
+    // title
+    if (row.title.includes(t)) s += 10;
 
-// (Optional) upstream try — safe to keep, but we’ll still filter locally if it fails.
-async function tryUpstream(q) {
-  const YEARS = ['2017', '2012'];
-  const BASES = [
-    (year, term) => `https://api.naics.us/v0/?year=${year}&search=${encodeURIComponent(term)}`,
-    (year, term) => `https://api.naics.us/v0/?year=${year}&terms=${encodeURIComponent(term)}`,
-  ];
+    // desc
+    if (row.desc && row.desc.includes(t)) s += 4;
 
+    // index terms
+    if (row.index?.some((i) => i.includes(t))) s += 3;
+  }
+  return s;
+};
+
+const filterAndRank = (rows, q, limit = 25) => {
+  if (!q) return rows.slice(0, limit);
+  const keyed = rows
+    .map((r) => ({ r, s: score(r, q) }))
+    .filter(({ s }) => s > 0)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, limit)
+    .map(({ r }) => r);
+  return keyed;
+};
+
+// Upstream demo API endpoints from that README (some years only have limited data)
+const YEARS = ['2012', '2007'];
+const BASES = [
+  (year, q) => `https://api.naics.us/v0/q?year=${year}&terms=${encodeURIComponent(q)}`,
+  (year, q) => `https://api.naics.us/v0/q?year=${year}&code=${encodeURIComponent(q)}`,
+];
+
+async function tryUpstream(term) {
   for (const build of BASES) {
     for (const year of YEARS) {
-      const url = build(year, q);
+      const url = build(year, term);
       try {
-        const r = await fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
+        const r = await fetch(url, {
+          headers: { accept: 'application/json' },
+          // don’t cache this in Next for long; we still filter locally
+          next: { revalidate: 0 },
+        });
         if (!r.ok) continue;
-        const data = await r.json().catch(() => []);
-        const rows = Array.isArray(data) ? data : Array.isArray(data.results) ? data.results : [];
-        if (rows.length) return normalize(rows);
+
+        const data = await r.json().catch(() => null);
+        const rows = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+        const normalized = normalize(rows);
+        if (normalized.length) return normalized;
       } catch {
-        // try next
+        // try next combo
       }
     }
   }
   return null;
 }
 
+// ─── 3) HANDLER ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  const q = String(req.query.q || '').trim();
-  if (q.length < 2) {
-    // don’t spam the UI with everything for 1-letter searches
-    return res.status(200).json({ results: [] });
+  const q = safe(req.query.q || '');
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
-  // 1) Try upstream (may be null/empty)
-  let upstream = await tryUpstream(q);
+  try {
+    // 1) ask upstream (and ALWAYS filter the results)
+    let results = [];
+    const netRows = await tryUpstream(q);
+    if (netRows && netRows.length) {
+      results = filterAndRank(netRows, q);
+    }
 
-  // 2) Always filter (upstream or local) by the query, then return top 25
-  const base = upstream && upstream.length ? upstream : normalize(LOCALS);
-  const filtered = filterAndScore(base, q).slice(0, 25);
+    // 2) if nothing from upstream, or query is empty, use local fallback
+    if (!results.length) {
+      const localRows = normalize(LOCALS);
+      results = filterAndRank(localRows, q);
+    }
 
-  // cache a bit (api, not SSG)
-  res.setHeader('Cache-Control', 'no-store');
-  return res.status(200).json({ results: filtered });
+    res.status(200).json({ results });
+  } catch (e) {
+    res.status(200).json({ results: filterAndRank(normalize(LOCALS), q) });
+  }
 }
