@@ -288,7 +288,7 @@ export default function Contracts() {
               <div className="text-sm text-gray-500">No notes yet.</div>
             ) : (
               <ul className="space-y-2">
-                {current.notes.map(n => 
+                {current.notes.map(n =>(
   <li key={n.id} className="border rounded p-2 flex items-start justify-between">
     {editingNoteId === n.id ? (
       <>
@@ -312,8 +312,8 @@ export default function Contracts() {
       </>
     )}
    </li>
-    ))}
-      </ul>
+     ))}
+   </ul>
         </div>
 
           <div className="border rounded p-3 bg-white dark:bg-gray-900">
