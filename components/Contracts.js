@@ -312,12 +312,9 @@ export default function Contracts() {
       </>
     )}
   </li>
-))
-                  
-                ))}
-              </ul>
-            )}
-          </div>
+    ))}
+      </ul>
+        </div>
 
           {/* Links */}
           <div className="border rounded p-3 bg-white dark:bg-gray-900">
