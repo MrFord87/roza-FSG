@@ -63,7 +63,28 @@ const FolderIcon = ({ className = 'w-8 h-8 text-yellow-400' }) => (
   </svg>
 );
 
-export default function Contracts() {
+export default function Contracts(export default function Contracts() {
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editText, setEditText] = useState('');
+
+  function startEditing(note) {
+    setEditingNoteId(note.id);
+    setEditText(note.text);
+  }
+
+  function saveNote(id) {
+    // Update notes in state
+    setNotes(prev =>
+      prev.map(n => n.id === id ? { ...n, text: editText } : n)
+    );
+    setEditingNoteId(null);
+
+    // Optional: Update in backend / database here
+  }
+
+  // ...rest of your existing useState/useEffect hooks
+  // ...rest of the component code
+}) {
   const [folders, setFolders] = useState([]);
   const [viewId, setViewId] = useState(null); // null=list view
   const [newFolderName, setNewFolderName] = useState('');
