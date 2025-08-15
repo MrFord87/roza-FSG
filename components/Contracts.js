@@ -82,8 +82,6 @@ export default function Contracts() {
     // Optional: Update in backend / database here
   }
 
-  // ...rest of your existing useState/useEffect hooks
-  // ...rest of the component code
 }) {
   const [folders, setFolders] = useState([]);
   const [viewId, setViewId] = useState(null); // null=list view
