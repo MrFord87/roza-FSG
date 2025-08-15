@@ -1,135 +1,113 @@
 // pages/dashboard.js
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
-// Keep paths lowercase to match your components folder names exactly
-import Calendar from '../components/Calendar';
-import Contracts from '../components/Contracts';
-import Contacts from '../components/Contacts';
-import Info from '../components/Info';
-import Sources from '../components/Sources';
+// 🔹 Components (match filenames exactly — case sensitive on deploy)
 import MiniWeekLite from '../components/MiniWeekLite';
+import Calendar from '../components/Calendar';
+import Info from '../components/Info';
+import Contacts from '../components/Contacts';
+import Sources from '../components/Sources';
+import Contracts from '../components/Contracts';
 
 export default function Dashboard() {
+  // Default to the main dashboard view
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  // On mount, restore last tab & verify login (client-only)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('activeTab');
-      if (saved) setActiveTab(saved);
-
-      const isLoggedIn = localStorage.getItem('isLoggedIn');
-      if (!isLoggedIn) {
-        window.location.href = '/login';
-      }
-    }
-  }, []);
-
-  // Persist current tab (client-only)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('activeTab', activeTab);
-    }
-  }, [activeTab]);
 
   const renderTab = () => {
     switch (activeTab) {
-      case 'calendar':
-        return <Calendar />;
-          <div style={{
-  backgroundColor: '#f0f0f0', // matches light gray
-  border: '1px solid #ccc',
-  padding: '1rem',
-  marginTop: '1rem',
-  maxWidth: '500px'
-}}>
-  <h3 style={{ marginTop: 0 }}>FSG LLC Solutions Quick Takes</h3>
-  <p><strong>EIN:</strong> 33-2704239</p>
-  <p><strong>Business Address:</strong> 3100 Joplin RD APT 10305, Kennedale, TX 76060</p>
-  <p><strong>CAGE Code:</strong> 0V5Q8</p>
-  <p><strong>Unique Entity ID:</strong> N4RCQC3WB4V7</p>
-</div>
-      case 'contracts':
-        return <Contracts />;
-      case 'contacts':
-        return <Contacts />;
       case 'dashboard':
         return (
           <div className="p-4">
-          <h2 className="text-xl font-semibold mb-2">This Week</h2>
-        <MiniWeekLite
-          onOpencalendar={(date) => {
-            try {
-             localStorage.setItem('rozaCalendarFocusDate',date.toISOString());
-            }catch {}
-              setActiveTab('calendar');
-          }}
+            <h2 className="text-xl font-semibold mb-2">This Week</h2>
+
+            {/* ✅ Your existing mini calendar */}
+            <MiniWeekLite
+              onOpenCalendar={(date) => {
+                // (Optional) hook up to open the full calendar on the chosen date
+                // console.log('Open calendar on:', date);
+              }}
             />
-            </div>
-            );
-      case 'info':
-        return <Info />;
-      case 'sources':
-        return <Sources />;
-      default:
-        return (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-2">Welcome to ROZA</h1>
-            <p>Select a tab to get started.</p>
+
+            {/* ✅ Quick Takes box: same “gray card” feel, sits right under the mini calendar */}
+            <section
+              className="mt-4 rounded border border-gray-300 p-4"
+              style={{ backgroundColor: '#f0f0f0' }}
+            >
+              <h3 className="m-0 text-lg font-semibold">FSG LLC Solutions Quick Takes</h3>
+              <div className="mt-2 space-y-1">
+                <p><strong>EIN:</strong> 33-2704239</p>
+                <p><strong>Business Address:</strong> 3100 Joplin RD APT 10305, Kennedale, TX 76060</p>
+                <p><strong>CAGE Code:</strong> 0V5Q8</p>
+                <p><strong>Unique Entity ID:</strong> N4RCQC3WB4V7</p>
+              </div>
+            </section>
           </div>
         );
+
+      case 'calendar':
+        return <Calendar />;
+
+      case 'info':
+        return <Info />;
+
+      case 'contacts':
+        return <Contacts />;
+
+      case 'sources':
+        return <Sources />;
+
+      case 'contracts':
+        return <Contracts />;
+
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col">
-        <div className="p-4 font-bold text-lg border-b border-gray-700">
-          ROZA Dashboard
-        </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`block w-full text-left p-2 rounded ${activeTab === 'dashboard' ? 'bg-gray-700' : ''}`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`block w-full text-left p-2 rounded ${activeTab === 'calendar' ? 'bg-gray-700' : ''}`}
-          >
-            Calendar
-          </button>
-          <button
-            onClick={() => setActiveTab('contracts')}
-            className={`block w-full text-left p-2 rounded ${activeTab === 'contracts' ? 'bg-gray-700' : ''}`}
-          >
-            Contracts
-          </button>
-          <button
-            onClick={() => setActiveTab('contacts')}
-            className={`block w-full text-left p-2 rounded ${activeTab === 'contacts' ? 'bg-gray-700' : ''}`}
-          >
-            Contacts
-          </button>
-          <button
-            onClick={() => setActiveTab('info')}
-            className={`block w-full text-left p-2 rounded ${activeTab === 'info' ? 'bg-gray-700' : ''}`}
-          >
-            Info
-          </button>
-          <button
-            onClick={() => setActiveTab('sources')}
-            className={`block w-full text-left p-2 rounded ${activeTab === 'sources' ? 'bg-gray-700' : ''}`}
-          >
-            Sources
-          </button>
-        </nav>
-      </aside>
+    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
+      {/* Top Tabs */}
+      <nav className="flex gap-2 p-4 border-b border-gray-200 dark:border-gray-800">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`px-3 py-1 rounded ${activeTab === 'dashboard' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}
+        >
+          Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`px-3 py-1 rounded ${activeTab === 'calendar' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}
+        >
+          Calendar
+        </button>
+        <button
+          onClick={() => setActiveTab('info')}
+          className={`px-3 py-1 rounded ${activeTab === 'info' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}
+        >
+          Info
+        </button>
+        <button
+          onClick={() => setActiveTab('contacts')}
+          className={`px-3 py-1 rounded ${activeTab === 'contacts' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}
+        >
+          Contacts
+        </button>
+        <button
+          onClick={() => setActiveTab('sources')}
+          className={`px-3 py-1 rounded ${activeTab === 'sources' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}
+        >
+          Sources
+        </button>
+        <button
+          onClick={() => setActiveTab('contracts')}
+          className={`px-3 py-1 rounded ${activeTab === 'contracts' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800'}`}
+        >
+          Contracts
+        </button>
+      </nav>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">{renderTab()}</main>
+      {/* Tab Content */}
+      <main>{renderTab()}</main>
     </div>
   );
 }
