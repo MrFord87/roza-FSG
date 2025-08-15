@@ -82,7 +82,7 @@ export default function Contracts() {
     // Optional: Update in backend / database here
   }
 
-}) {
+ 
   const [folders, setFolders] = useState([]);
   const [viewId, setViewId] = useState(null); // null=list view
   const [newFolderName, setNewFolderName] = useState('');
