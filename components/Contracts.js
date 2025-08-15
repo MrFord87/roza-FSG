@@ -311,7 +311,7 @@ export default function Contracts() {
         </div>
       </>
     )}
-  </li>
+   </li>
     ))}
       </ul>
         </div>
