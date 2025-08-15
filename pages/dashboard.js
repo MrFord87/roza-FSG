@@ -36,6 +36,19 @@ export default function Dashboard() {
     switch (activeTab) {
       case 'calendar':
         return <Calendar />;
+          <div style={{
+  backgroundColor: '#f0f0f0', // matches light gray
+  border: '1px solid #ccc',
+  padding: '1rem',
+  marginTop: '1rem',
+  maxWidth: '500px'
+}}>
+  <h3 style={{ marginTop: 0 }}>FSG LLC Solutions Quick Takes</h3>
+  <p><strong>EIN:</strong> 33-2704239</p>
+  <p><strong>Business Address:</strong> 3100 Joplin RD APT 10305, Kennedale, TX 76060</p>
+  <p><strong>CAGE Code:</strong> 0V5Q8</p>
+  <p><strong>Unique Entity ID:</strong> N4RCQC3WB4V7</p>
+</div>
       case 'contracts':
         return <Contracts />;
       case 'contacts':
