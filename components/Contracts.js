@@ -63,7 +63,7 @@ const FolderIcon = ({ className = 'w-8 h-8 text-yellow-400' }) => (
   </svg>
 );
 
-export default function Contracts(export default function Contracts() {
+export default function Contracts() {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editText, setEditText] = useState('');
 
