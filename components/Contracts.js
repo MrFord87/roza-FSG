@@ -312,11 +312,10 @@ export default function Contracts() {
       </>
     )}
   </li>
-    )}
+    ))}
       </ul>
         </div>
 
-          {/* Links */}
           <div className="border rounded p-3 bg-white dark:bg-gray-900">
             <div className="font-semibold mb-2">Links / External Files</div>
             <form onSubmit={addLink} className="grid gap-2 mb-3">
