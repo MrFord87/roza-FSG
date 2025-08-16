@@ -1,5 +1,5 @@
 // pages/dashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 // 🔹 Components (match filenames exactly — case sensitive on deploy)
 import MiniWeekLite from '../components/MiniWeekLite';
@@ -12,17 +12,6 @@ import Contracts from '../components/Contracts';
 export default function Dashboard() {
   // Default to the main dashboard view
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const saved = window.localStorage.getItem('roza_active_tab');
-    if (saved) setActiveTab(saved);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem('roza_active_tab',activeTab);
-  }, [activeTab]);
 
   const renderTab = () => {
     switch (activeTab) {
