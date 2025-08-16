@@ -13,7 +13,7 @@ export default function Dashboard() {
   // Default to the main dashboard view
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  useEffect(() = {
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     const saved = window.localStorage.getItem('roza_active_tab');
     if (saved) setActiveTab(saved);
