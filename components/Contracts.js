@@ -164,6 +164,21 @@ export default function Contracts() {
       return { ...f, notes: f.notes.filter(n => n.id !== nid), updatedAt: Date.now() };
     }));
   }
+  function editNote(nid) {
+    if (!current) return;
+    const f = folders.find(x => x.id === current.id);
+    const note = f.notes.find(n => n.id === nid);
+    const newText = prompt('Edit note:', note?.text || '');
+    if (!newText) return;
+    setFolders(folders.map(f => {
+      if (f.id !== current.id) return f;
+      return {
+        ...f,
+        notes: f.notes.map(n => n.id === nid ? { ...n, text: newText, ts: Date.now() } : n),
+        updatedAt: Date.now()
+      };
+    }));
+  }
 
   // ---- links
   function addLink(e) {
@@ -307,7 +322,10 @@ export default function Contracts() {
                 {current.notes.map(n => (
                   <li key={n.id} className="border rounded p-2 flex items-start justify-between">
                     <div className="whitespace-pre-wrap">{n.text}</div>
-                    <button onClick={()=>removeNote(n.id)} className="ml-3 text-red-600 text-sm">Remove</button>
+                    <div className="flex gap-2 ml-3">
+                      <button onClick={()=>editNote(n.id)} className="text-blue-600 text-sm">Edit</button>
+                      <button onClick={()=>removeNote(n.id)} className="text-red-600 text-sm">Remove</button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -429,27 +447,4 @@ export default function Contracts() {
               {/* Clickable left section */}
               <button
                 onClick={() => setViewId(f.id)}
-                className="flex items-center gap-2 min-w-0 text-left hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 py-1 flex-1"
-                title="Open folder"
-              >
-                <FolderIcon className="w-8 h-8 text-yellow-700" />
-                <div className="min-w-0">
-                  <div className="font-medium truncate" title={f.name}>{f.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(f.updatedAt || f.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </button>
-
-              {/* Small actions on the right */}
-              <div className="flex flex-col gap-1 ml-2">
-                <button onClick={()=>renameFolder(f.id)} className="px-2 py-1 rounded border text-xs">Rename</button>
-                <button onClick={()=>deleteFolder(f.id)} className="px-2 py-1 rounded border border-red-500 text-red-600 text-xs">Del</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+                className="flex items-center gap-2 min-w-0 text-left hover:bg-gray-
