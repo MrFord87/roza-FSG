@@ -1,7 +1,6 @@
 // pages/dashboard.js
 import React, { useState } from 'react';
 
-// 🔹 Components (match filenames exactly — case sensitive on deploy)
 import MiniWeekLite from '../components/MiniWeekLite';
 import Calendar from '../components/Calendar';
 import Info from '../components/Info';
