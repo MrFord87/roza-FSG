@@ -1,9 +1,10 @@
+
 // components/Contracts.js
 import React, { useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'roza_contracts_v2';
+const STORAGE_KEY = 'roza_contracts_v2'; // v2 includes file support
 
-// -------- utils
+// ---------- utils
 const uid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const normalizeUrl = (u) => {
   if (!u) return '';
@@ -12,7 +13,7 @@ const normalizeUrl = (u) => {
   return `https://${t}`;
 };
 
-// -------- tiny IndexedDB (PDFs)
+// ---------- tiny IndexedDB wrapper
 const DB_NAME = 'roza_contract_files';
 const DB_STORE = 'files';
 
@@ -21,7 +22,9 @@ function openDB() {
     const req = indexedDB.open(DB_NAME, 1);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+        db.createObjectStore(DB_STORE);
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -55,7 +58,7 @@ async function idbDel(key) {
   });
 }
 
-// -------- folder icon
+// ---------- folder icon (inline SVG)
 const FolderIcon = ({ className = 'w-8 h-8 text-yellow-700' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
     <path d="M10 4a2 2 0 0 1 1.414.586l1 1A2 2 0 0 0 13.828 6H19a2 2 0 0 1 2 2v1H3V6a2 2 0 0 1 2-2h5z"></path>
@@ -65,27 +68,24 @@ const FolderIcon = ({ className = 'w-8 h-8 text-yellow-700' }) => (
 
 export default function Contracts() {
   const [folders, setFolders] = useState([]);
-  const [viewId, setViewId] = useState(null); // null=list view
+  const [viewId, setViewId] = useState(null); // null=list, else folderId
   const [newFolderName, setNewFolderName] = useState('');
   const [error, setError] = useState('');
 
-  // details state
+  // detail inputs
   const [noteText, setNoteText] = useState('');
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  // inline note edit state
-  const [editingNoteId, setEditingNoteId] = useState(null);
-  const [editText, setEditText] = useState('');
-
-  // load / save
+  // load
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) setFolders(JSON.parse(raw));
     } catch {}
   }, []);
+  // persist
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(folders)); } catch {}
   }, [folders]);
@@ -95,7 +95,7 @@ export default function Contracts() {
     [folders, viewId]
   );
 
-  // ---- folders
+  // ---- folder ops
   function addFolder(e) {
     e.preventDefault();
     setError('');
@@ -111,7 +111,7 @@ export default function Contracts() {
       updatedAt: now,
       notes: [],
       links: [],
-      files: [],
+      files: [], // {id, name, size, type, addedAt}
     }, ...folders]);
     setNewFolderName('');
   }
@@ -120,6 +120,7 @@ export default function Contracts() {
     const f = folders.find(x => x.id === id);
     if (!confirm(`Delete folder "${f?.name || ''}" and all its files?`)) return;
 
+    // also remove files from IndexedDB
     (async () => {
       for (const file of (f?.files || [])) {
         try { await idbDel(file.id); } catch {}
@@ -157,43 +158,12 @@ export default function Contracts() {
     }));
     setNoteText('');
   }
-
   function removeNote(nid) {
     if (!current) return;
     setFolders(folders.map(f => {
       if (f.id !== current.id) return f;
       return { ...f, notes: f.notes.filter(n => n.id !== nid), updatedAt: Date.now() };
     }));
-    if (editingNoteId === nid) {
-      setEditingNoteId(null);
-      setEditText('');
-    }
-  }
-
-  function startEditing(note) {
-    setEditingNoteId(note.id);
-    setEditText(note.text);
-  }
-
-  function cancelEditing() {
-    setEditingNoteId(null);
-    setEditText('');
-  }
-
-  function saveNote(id) {
-    if (!current) return;
-    const txt = (editText || '').trim();
-    if (!txt) { cancelEditing(); return; }
-
-    setFolders(folders.map(f => {
-      if (f.id !== current.id) return f;
-      return {
-        ...f,
-        notes: f.notes.map(n => n.id === id ? { ...n, text: txt, ts: Date.now() } : n),
-        updatedAt: Date.now()
-      };
-    }));
-    cancelEditing();
   }
 
   // ---- links
@@ -225,7 +195,7 @@ export default function Contracts() {
     }));
   }
 
-  // ---- files (PDFs)
+  // ---- files (PDFs) in IndexedDB
   async function handleUpload(e) {
     const files = Array.from(e.target.files || []);
     if (!current || files.length === 0) return;
@@ -266,6 +236,7 @@ export default function Contracts() {
     if (!blob) throw new Error('File not found');
     return URL.createObjectURL(blob);
   }
+
   async function viewFile(fileId) {
     try {
       const url = await getFileUrl(fileId);
@@ -275,6 +246,7 @@ export default function Contracts() {
       alert('Unable to open file.');
     }
   }
+
   async function deleteFile(fileId) {
     if (!current) return;
     if (!confirm('Delete this file?')) return;
@@ -285,17 +257,24 @@ export default function Contracts() {
     }));
   }
 
+  // sorting
   const sorted = [...folders].sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
 
-  // ===== detail view =====
+  // ======= Renders
   if (current) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <button onClick={() => setViewId(null)} className="px-3 py-1 border rounded">← Back to folders</button>
+          <button onClick={() => setViewId(null)} className="px-3 py-1 border rounded">
+            ← Back to folders
+          </button>
           <div className="flex gap-2">
-            <button onClick={() => renameFolder(current.id)} className="px-3 py-1 border rounded">Rename</button>
-            <button onClick={() => deleteFolder(current.id)} className="px-3 py-1 border rounded border-red-500 text-red-600">Delete</button>
+            <button onClick={() => renameFolder(current.id)} className="px-3 py-1 border rounded">
+              Rename
+            </button>
+            <button onClick={() => deleteFolder(current.id)} className="px-3 py-1 border rounded border-red-500 text-red-600">
+              Delete
+            </button>
           </div>
         </div>
 
@@ -308,7 +287,6 @@ export default function Contracts() {
           {/* Notes */}
           <div className="border rounded p-3 bg-white dark:bg-gray-900">
             <div className="font-semibold mb-2">Notes</div>
-
             <form onSubmit={addNote} className="mb-3">
               <textarea
                 value={noteText}
@@ -323,34 +301,14 @@ export default function Contracts() {
                 </button>
               </div>
             </form>
-
             {current.notes.length === 0 ? (
               <div className="text-sm text-gray-500">No notes yet.</div>
             ) : (
               <ul className="space-y-2">
                 {current.notes.map(n => (
                   <li key={n.id} className="border rounded p-2 flex items-start justify-between">
-                    {editingNoteId === n.id ? (
-                      <div className="flex w-full gap-2 items-start">
-                        <input
-                          value={editText}
-                          onChange={(e)=>setEditText(e.target.value)}
-                          className="border p-1 flex-grow"
-                        />
-                        <div className="flex gap-2">
-                          <button onClick={()=>saveNote(n.id)} type="button" className="text-green-600 text-sm">Save</button>
-                          <button onClick={cancelEditing} type="button" className="text-gray-600 text-sm">Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="whitespace-pre-wrap">{n.text}</div>
-                        <div className="flex gap-3 ml-3">
-                          <button onClick={()=>startEditing(n)} className="text-blue-600 text-sm">Edit</button>
-                          <button onClick={()=>removeNote(n.id)} className="text-red-600 text-sm">Remove</button>
-                        </div>
-                      </>
-                    )}
+                    <div className="whitespace-pre-wrap">{n.text}</div>
+                    <button onClick={()=>removeNote(n.id)} className="ml-3 text-red-600 text-sm">Remove</button>
                   </li>
                 ))}
               </ul>
@@ -441,7 +399,7 @@ export default function Contracts() {
     );
   }
 
-  // ===== list view =====
+  // ======= list view (compact, Windows-like; icon+name clickable)
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Contracts</h2>
@@ -484,7 +442,7 @@ export default function Contracts() {
                 </div>
               </button>
 
-              {/* Small actions */}
+              {/* Small actions on the right */}
               <div className="flex flex-col gap-1 ml-2">
                 <button onClick={()=>renameFolder(f.id)} className="px-2 py-1 rounded border text-xs">Rename</button>
                 <button onClick={()=>deleteFolder(f.id)} className="px-2 py-1 rounded border border-red-500 text-red-600 text-xs">Del</button>
