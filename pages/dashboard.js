@@ -7,7 +7,7 @@ import Calendar from '../components/Calendar';
 import Info from '../components/Info';
 import Contacts from '../components/Contacts';
 import Sources from '../components/Sources';
-const Contracts = dynamic(() => import('../components/Contracts'), { ssr: false });
+import Contracts from '../components/Contracts';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
