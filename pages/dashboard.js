@@ -6,7 +6,7 @@ import Calendar from '../components/Calendar';
 import Info from '../components/Info';
 import Contacts from '../components/Contacts';
 import Sources from '../components/Sources';
-import Contracts from '../components/Contracts';
+const Contracts = dynamic(() => import('../components/Contracts'), { ssr: false });
 
 export default function Dashboard() {
   // Default to the main dashboard view
