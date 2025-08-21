@@ -8,6 +8,7 @@ import Calendar     from '../components/Calendar';
 import Info         from '../components/Info';
 import Contacts     from '../components/Contacts';
 import Sources      from '../components/Sources';
+import ProposalBox from '../ProposalBox'; 
 
 // ✅ Use dynamic import for Contracts (avoid SSR issues)
 const Contracts = dynamic(() => import('../components/Contracts'), { ssr: false });
@@ -60,6 +61,13 @@ export default function Dashboard() {
           </div>
         );
 
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <MiniCalendar />
+  <QuickTakes />
+</div>
+
+<ProposalBox />   {/* 👈 this adds your template */}
+  
       case 'calendar':
         return <Calendar />;
 
