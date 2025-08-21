@@ -8,7 +8,6 @@ import Calendar     from '../components/Calendar';
 import Info         from '../components/Info';
 import Contacts     from '../components/Contacts';
 import Sources      from '../components/Sources';
-import ProposalBox from '../ProposalBox'; 
 
 // ✅ Use dynamic import for Contracts (avoid SSR issues)
 const Contracts = dynamic(() => import('../components/Contracts'), { ssr: false });
@@ -66,7 +65,21 @@ export default function Dashboard() {
   <QuickTakes />
 </div>
 
-<ProposalBox />   {/* 👈 this adds your template */}
+{/* Proposal Template Viewer */}
+<section
+  className="mt-4 rounded border border-gray-300 p-4"
+  style={{ backgroundColor: '#f0f0f0' }}
+>
+  <h3 className="m-0 text-lg font-semibold">FSG Proposal Template</h3>
+  <iframe
+    src="/proposals/FSG-template.html"
+    width="100%"
+    height="900px"
+    style={{ border: "none", marginTop: "10px" }}
+    title="Proposal Template"
+  />
+</section>
+
   
       case 'calendar':
         return <Calendar />;
