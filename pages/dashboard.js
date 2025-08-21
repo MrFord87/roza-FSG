@@ -71,13 +71,30 @@ export default function Dashboard() {
   style={{ backgroundColor: '#f0f0f0' }}
 >
   <h3 className="m-0 text-lg font-semibold">FSG Proposal Template</h3>
-  <iframe
-    src="/proposals/FSG-template.html"
-    width="100%"
-    height="900px"
-    style={{ border: "none", marginTop: "10px" }}
-    title="Proposal Template"
-  />
+
+  {/* Fallback link so you can verify the path easily */}
+  <p className="text-sm mt-2">
+    If the preview doesn’t load, open it directly:&nbsp;
+    <a
+      href="/proposals/FSG-template.html"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline"
+    >
+      /proposals/FSG-template.html
+    </a>
+  </p>
+
+  <div className="mt-2" style={{ border: '1px solid #ccc', background: '#fff' }}>
+    <iframe
+      src="/proposals/FSG-template.html?v=2"
+      title="Proposal Template"
+      width="100%"
+      height="900"
+      style={{ border: 'none', display: 'block' }}
+      onLoad={() => console.log('Proposal iframe loaded')}
+    />
+  </div>
 </section>
 
   
