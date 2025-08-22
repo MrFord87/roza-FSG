@@ -92,8 +92,7 @@ export default function Dashboard() {
       width="100%"
       height="900"
       style={{ border: 'none', display: 'block' }}
-      onLoad={() => console.log('Proposal iframe loaded')}
-/> 
+      onLoad={() => console.log('Proposal iframe loaded')}/>
   </div>
 </section>  
   );     
