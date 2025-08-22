@@ -1,126 +1,32 @@
 // pages/dashboard.js
-import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useState } from 'react';
 
-// ✅ All paths are strings and point into ../components/...
+// Components (match filenames exactly — case sensitive on deploy)
 import MiniWeekLite from '../components/MiniWeekLite';
-import Calendar     from '../components/Calendar';
-import Info         from '../components/Info';
-import Contacts     from '../components/Contacts';
-import Sources      from '../components/Sources';
-
-// ✅ Use dynamic import for Contracts (avoid SSR issues)
-const Contracts = dynamic(() => import('../components/Contracts'), { ssr: false });
+import Calendar from '../components/Calendar';
+import Info from '../components/Info';
+import Contacts from '../components/Contacts';
+import Sources from '../components/Sources';
+import Contracts from '../components/Contracts';
 
 export default function Dashboard() {
-  // Default to the main dashboard view
+  // Persist selected tab between sessions
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Load last-opened tab from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const saved = window.localStorage.getItem('roza_active_tab');
     if (saved) setActiveTab(saved);
   }, []);
 
-  // Persist active tab
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('roza_active_tab', activeTab);
   }, [activeTab]);
 
-  const renderTab = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return (
-          <div className="p-4">
-            <h2 className="text-xl font-semibold mb-2">This Week</h2>
-
-            {/* Mini calendar */}
-            <MiniWeekLite
-              onOpenCalendar={(date) => {
-                // (optional) open full calendar on date
-                // console.log('Open calendar on:', date);
-              }}
-            />
-
-            {/* Quick Takes box (same gray feel) */}
-            <section
-              className="mt-4 rounded border border-gray-300 p-4"
-              style={{ backgroundColor: '#f0f0f0' }}
-            >
-              <h3 className="m-0 text-lg font-semibold">FSG LLC Solutions Quick Takes</h3>
-              <div className="mt-2 space-y-1">
-                <p><strong>EIN:</strong> 33-2704239</p>
-                <p><strong>Business Address:</strong> 3100 Joplin RD APT 10305, Kennedale, TX 76060</p>
-                <p><strong>CAGE Code:</strong> 0V5Q8</p>
-                <p><strong>Unique Entity ID:</strong> N4RCQC3WB4V7</p>
-              </div>
-            </section>
-          </div>
-        );
-
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  <MiniCalendar />
-  <QuickTakes />
-</div>
-
-{/* Proposal Template Viewer */}
-<section
-  className="mt-4 rounded border border-gray-300 p-4"
-  style={{ backgroundColor: '#f0f0f0' }}
->
-  <h3 className="m-0 text-lg font-semibold">FSG Proposal Template</h3>
-
-  {/* Fallback link so you can verify the path easily */}
-  <p className="text-sm mt-2">
-    If the preview doesn’t load, open it directly:&nbsp;
-    <a
-      href="/proposals/FSG-template.html"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="underline"
-    >
-      /proposals/FSG-template.html
-    </a>
-  </p>
-
-  <div className="mt-2" style={{ border: '1px solid #ccc', background: '#fff' }}>
-    <iframe
-      src="/proposals/FSG-template.html?v=2"
-      title="Proposal Template"
-      width="100%"
-      height="900"
-      style={{ border: 'none', display: 'block' }}
-      onLoad={() => console.log('Proposal iframe loaded')} />
-  </div>
-</section>  
-  </div>
-  );
-}  
-      case 'calendar':
-        return <Calendar />;
-
-      case 'info':
-        return <Info />;
-
-      case 'contacts':
-        return <Contacts />;
-
-      case 'sources':
-        return <Sources />;
-
-      case 'contracts':
-        return <Contracts />;
-
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
-      {/* Tabs */}
+      {/* Top Tabs */}
       <nav className="flex gap-2 p-4 border-b border-gray-200 dark:border-gray-800">
         <button
           onClick={() => setActiveTab('dashboard')}
@@ -160,8 +66,69 @@ export default function Dashboard() {
         </button>
       </nav>
 
-      {/* Content */}
-      <main>{renderTab()}</main>
+      {/* Tab Content */}
+      <main>
+        {activeTab === 'dashboard' && (
+          <div className="p-4">
+            <h2 className="text-xl font-semibold mb-2">This Week</h2>
+
+            {/* Mini calendar */}
+            <MiniWeekLite />
+
+            {/* Quick Takes */}
+            <section
+              className="mt-4 rounded border border-gray-300 p-4"
+              style={{ backgroundColor: '#f0f0f0' }}
+            >
+              <h3 className="m-0 text-lg font-semibold">FSG LLC Solutions Quick Takes</h3>
+              <div className="mt-2 space-y-1">
+                <p><strong>EIN:</strong> 33-2704239</p>
+                <p><strong>Business Address:</strong> 3100 Joplin RD APT 10305, Kennedale, TX 76060</p>
+                <p><strong>CAGE Code:</strong> 0V5Q8</p>
+                <p><strong>Unique Entity ID:</strong> N4RCQC3WB4V7</p>
+              </div>
+            </section>
+
+            {/* Proposal Template Viewer */}
+            <section
+              className="mt-4 rounded border border-gray-300 p-4"
+              style={{ backgroundColor: '#f0f0f0' }}
+            >
+              <h3 className="m-0 text-lg font-semibold">FSG Proposal Template</h3>
+
+              {/* Helpful direct link (for quick verify / open in new tab) */}
+              <p className="text-sm mt-2">
+                If the preview doesn’t load, open it directly:&nbsp;
+                <a
+                  href="/proposals/FSG-template.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  /proposals/FSG-template.html
+                </a>
+              </p>
+
+              <div className="mt-2" style={{ border: '1px solid #ccc', background: '#fff' }}>
+                <iframe
+                  src="/proposals/FSG-template.html?v=2"
+                  title="Proposal Template"
+                  width="100%"
+                  height="900"
+                  style={{ border: 'none', display: 'block' }}
+                  onLoad={() => console.log('Proposal iframe loaded')}
+                />
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'calendar' && <Calendar />}
+        {activeTab === 'info' && <Info />}
+        {activeTab === 'contacts' && <Contacts />}
+        {activeTab === 'sources' && <Sources />}
+        {activeTab === 'contracts' && <Contracts />}
+      </main>
     </div>
   );
 }
