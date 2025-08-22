@@ -96,8 +96,9 @@ export default function Dashboard() {
     />
   </div>
 </section>
-
-  
+</div>  
+ );     
+}  
       case 'calendar':
         return <Calendar />;
 
