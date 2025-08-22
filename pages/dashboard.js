@@ -1,7 +1,7 @@
 // pages/dashboard.js
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// Components (match filenames exactly — case sensitive on deploy)
+// Components (match filenames exactly)
 import MiniWeekLite from '../components/MiniWeekLite';
 import Calendar from '../components/Calendar';
 import Info from '../components/Info';
@@ -10,15 +10,16 @@ import Sources from '../components/Sources';
 import Contracts from '../components/Contracts';
 
 export default function Dashboard() {
-  // Persist selected tab between sessions
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  // restore last tab
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const saved = window.localStorage.getItem('roza_active_tab');
     if (saved) setActiveTab(saved);
   }, []);
 
+  // persist tab
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('roza_active_tab', activeTab);
@@ -88,11 +89,14 @@ export default function Dashboard() {
                 <p><strong>Unique Entity ID:</strong> N4RCQC3WB4V7</p>
               </div>
             </section>
+          </div>
+        )} {/* 👈 close dashboard block */}
 
-        {activeTab === 'calendar' && <Calendar />}
-        {activeTab === 'info' && <Info />}
-        {activeTab === 'contacts' && <Contacts />}
-        {activeTab === 'sources' && <Sources />}
+        {/* Other tabs (simple conditional renders) */}
+        {activeTab === 'calendar'  && <Calendar />}
+        {activeTab === 'info'      && <Info />}
+        {activeTab === 'contacts'  && <Contacts />}
+        {activeTab === 'sources'   && <Sources />}
         {activeTab === 'contracts' && <Contracts />}
       </main>
     </div>
