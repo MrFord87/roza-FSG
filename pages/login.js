@@ -1,61 +1,77 @@
-// pages/login.js
-import React from "react";
+import React, { useState, useEffect } from 'react';
 
-const USERS = [
-  { email: "a.ford@fsgsolutions.net", password: "FSG123$%^" },      // You
-  { email: "a.sweet@fsgsolutions.net", password: "FSG123$%^" },     // Anthony
-  { email: "u.gonzales@fsgsolutions.net", password: "FSG123$%^" },  // Ubaldo
-];
+const ALLOWED_EMAILS = new Set([
+  'a.sweet@fsgsolutions.net',
+  'u.gonzales@fsgsolutions.net',
+  'a.ford@fsgsolutions.net', // keep yours too if you want
+]);
+const PASSWORD = 'FSG123$%^';
 
 export default function Login() {
-  const handleLogin = (e) => {
-    e.preventDefault();
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [err, setErr] = useState('');
 
-    const email = e.target.email.value.trim();
-    const password = e.target.password.value;
+  // If already logged in, go straight to dashboard
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem('roza_user');
+    try {
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed?.email) {
+        window.location.replace('/dashboard');
+      }
+    } catch {}
+  }, []);
 
-    const foundUser = USERS.find(
-      (user) => user.email === email && user.password === password
-    );
+  const handleSubmit = (e) => {
+    e.preventDefault(); // 🔴 important: avoid full page form POST
 
-    if (foundUser) {
-      localStorage.setItem("roza_user", foundUser.email);
-      alert(`Welcome, ${foundUser.email}!`);
-      window.location.href = "/dashboard";
-    } else {
-      alert("Invalid credentials. Try again.");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!ALLOWED_EMAILS.has(cleanEmail) || pass !== PASSWORD) {
+      setErr('Invalid email or password.');
+      return;
     }
+
+    // ✅ Save a clean JSON value under the exact key dashboard expects
+    try {
+      localStorage.setItem('roza_user', JSON.stringify({ email: cleanEmail, ts: Date.now() }));
+    } catch {}
+
+    // Navigate (replace avoids back button going to /login again)
+    window.location.replace('/dashboard');
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-black">
-      <div className="w-full max-w-md p-6 rounded-xl shadow-lg bg-white dark:bg-gray-900">
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">
-          ROZA Login
-        </h2>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            required
-            className="w-full p-2 border rounded-md dark:bg-gray-800 dark:text-white"
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            required
-            className="w-full p-2 border rounded-md dark:bg-gray-800 dark:text-white"
-          />
-          <button
-            type="submit"
-            className="w-full py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700"
-          >
-            Login
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen flex items-center justify-center">
+      <form onSubmit={handleSubmit} className="border rounded p-4 w-full max-w-sm">
+        <h1 className="text-xl font-semibold mb-3">Sign in to ROZA</h1>
+
+        <label className="block text-sm mb-1">Email</label>
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border rounded p-2 mb-3"
+          placeholder="name@fsgsolutions.net"
+          autoComplete="username"
+        />
+
+        <label className="block text-sm mb-1">Password</label>
+        <input
+          type="password"
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+          className="w-full border rounded p-2 mb-3"
+          placeholder="Password"
+          autoComplete="current-password"
+        />
+
+        {err && <div className="text-red-600 text-sm mb-2">{err}</div>}
+
+        <button type="submit" className="w-full px-3 py-2 rounded bg-blue-600 text-white">
+          Sign in
+        </button>
+      </form>
     </div>
   );
 }
