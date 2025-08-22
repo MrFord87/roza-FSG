@@ -95,8 +95,7 @@ export default function Dashboard() {
       onLoad={() => console.log('Proposal iframe loaded')}
     />
   </div>
-</section>
-</div>  
+</section>  
  );     
 }  
       case 'calendar':
